@@ -95,9 +95,9 @@ final class AuthManager: ObservableObject {
     @Published var authToken: String?
 
     private let apiManager = APIManager.shared
+    private let keychainManager = KeychainManager.shared
 
     init() {
-
         Task { @MainActor in
             await self.checkStoredAuth()
         }
@@ -105,9 +105,13 @@ final class AuthManager: ObservableObject {
 
     @MainActor
     private func checkStoredAuth() async {
-        if let token = UserDefaults.standard.string(forKey: "authToken") {
-            self.authToken = token
-            await validateStoredToken()
+        do {
+            if let token = try keychainManager.getAuthToken() {
+                self.authToken = token
+                await validateStoredToken()
+            }
+        } catch {
+            print("Failed to retrieve token from keychain: \(error)")
         }
     }
 
@@ -125,7 +129,7 @@ final class AuthManager: ObservableObject {
             self.authToken = nil
             self.currentUser = nil
             self.isLoggedIn = false
-            UserDefaults.standard.removeObject(forKey: "authToken")
+            try? keychainManager.deleteAuthToken()
         }
     }
 
@@ -254,7 +258,11 @@ final class AuthManager: ObservableObject {
         self.currentUser = authResponse.user
         self.isLoggedIn = true
 
-        UserDefaults.standard.set(authResponse.token, forKey: "authToken")
+        do {
+            try keychainManager.saveAuthToken(authResponse.token)
+        } catch {
+            print("Failed to save token to keychain: \(error)")
+        }
     }
     @MainActor
     func signOut() {
@@ -262,7 +270,11 @@ final class AuthManager: ObservableObject {
         self.currentUser = nil
         self.isLoggedIn = false
 
-        UserDefaults.standard.removeObject(forKey: "authToken")
+        do {
+            try keychainManager.deleteAuthToken()
+        } catch {
+            print("Failed to delete token from keychain: \(error)")
+        }
     }
 
     func linkAppleSSO() async throws {

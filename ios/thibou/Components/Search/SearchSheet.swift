@@ -103,24 +103,6 @@ struct SearchSheet: View {
                         )
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
 
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            dismiss()
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(14)
-                        .background(
-                            .ultraThinMaterial,
-                            in: Circle()
-                        )
-                        .overlay(
-                            Circle()
-                                .stroke(.white.opacity(0.2), lineWidth: 0.5)
-                        )
-                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)

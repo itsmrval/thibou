@@ -64,6 +64,31 @@ class LanguageManager: ObservableObject {
         if let savedLanguage = userDefaults.string(forKey: languageKey),
            let language = AppLanguage(rawValue: savedLanguage) {
             selectedLanguage = language
+        } else {
+            selectedLanguage = getSystemLanguage()
+        }
+    }
+
+    private func getSystemLanguage() -> AppLanguage {
+        let locale = Locale.current
+        let languageCode = locale.language.languageCode?.identifier ?? "en"
+        let regionCode = locale.region?.identifier
+
+        if languageCode == "fr" && regionCode == "CA" {
+            return .french
+        }
+        switch languageCode {
+        case "en": return .english
+        case "ja": return .japanese
+        case "fr": return .french
+        case "es": return .spanish
+        case "de": return .german
+        case "it": return .italian
+        case "ko": return .korean
+        case "zh": return .chinese
+        case "nl": return .dutch
+        case "ru": return .russian
+        default: return .english
         }
     }
 

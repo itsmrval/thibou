@@ -1,0 +1,32 @@
+{
+  "ok": "OK",
+  "cancel": "Cancel",
+  "back": "Back",
+  "next": "Next",
+  "done": "Done",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "loading": "Loading",
+  "error": "Error",
+  "success": "Success",
+  "retry": "Retry",
+  "search": "Search",
+  "search_placeholder": "Search villagers, fish, and more...",
+  "suggested": "Suggested",
+  "searching": "Searching...",
+  "no_results_found": "No Results",
+  "no_results_description": "Try searching for something else",
+  "not_specified": "Not specified",
+  "yes": "Yes",
+  "no": "No",
+  "version": "Version",
+  "unexpected_error": "An unexpected error occurred. Please try again.",
+  "navigation": {
+    "home": "Home",
+    "library": "Library",
+    "tools": "Tools",
+    "settings": "Settings",
+    "my_island": "My island"
+  }
+}

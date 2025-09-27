@@ -1,0 +1,29 @@
+{
+  "villagers": "Villagers",
+  "fish": "Fish",
+  "bugs": "Bugs",
+  "fossils": "Fossils",
+  "clothing": "Clothing",
+  "objects": "Objects",
+  "navigation": "Navigation",
+  "loading_villagers": "Loading villagers...",
+  "error_occurred": "An error occurred",
+  "no_villagers_found": "No villagers found",
+  "no_fish_found": "No fish found",
+  "no_bugs_found": "No bugs found",
+  "no_fossils_found": "No fossils found",
+  "no_clothing_found": "No clothing found",
+  "no_objects_found": "No objects found",
+  "sharing_text_todo": "sharing_text_todo",
+  "fish_locations": {
+    "river": "River",
+    "pond": "Pond",
+    "sea": "Sea",
+    "pier": "Pier"
+  },
+  "fish_rarities": {
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare"
+  }
+}

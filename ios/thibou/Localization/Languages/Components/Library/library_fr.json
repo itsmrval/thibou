@@ -1,0 +1,29 @@
+{
+  "villagers": "Villageois",
+  "fish": "Poissons",
+  "bugs": "Insectes",
+  "fossils": "Fossiles",
+  "clothing": "Vêtements",
+  "objects": "Objets",
+  "navigation": "Navigation",
+  "loading_villagers": "Chargement des villageois...",
+  "error_occurred": "Une erreur est survenue",
+  "no_villagers_found": "Aucun villageois n'a été trouvé",
+  "no_fish_found": "Aucun poisson n'a été trouvé",
+  "no_bugs_found": "Aucun insecte n'a été trouvé",
+  "no_fossils_found": "Aucun fossile n'a été trouvé",
+  "no_clothing_found": "Aucun vêtement n'a été trouvé",
+  "no_objects_found": "Aucun objet n'a été trouvé",
+  "sharing_text_todo": "sharing_text_todo",
+  "fish_locations": {
+    "river": "Rivière",
+    "pond": "Étang",
+    "sea": "Mer",
+    "pier": "Jetée"
+  },
+  "fish_rarities": {
+    "common": "Commun",
+    "uncommon": "Peu commun",
+    "rare": "Rare"
+  }
+}

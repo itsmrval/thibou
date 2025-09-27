@@ -1,0 +1,44 @@
+{
+  "location": "Location",
+  "rarity": "Rarity",
+  "shop_price": "Shop Price",
+  "cj_price": "C.J. Price",
+  "availability": "Availability",
+  "northern_hemisphere": "Northern",
+  "southern_hemisphere": "Southern",
+  "not_available": "-",
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  },
+  "fish_location_descriptions": {
+    "sea": "Found in the ocean around your island",
+    "river": "Found in the rivers on your island",
+    "pond": "Found in small ponds on your island",
+    "pier": "Found at the pier on your island"
+  },
+  "basic_information": "Basic Information",
+  "translations": "Translations",
+  "languages": {
+    "english": "English",
+    "french": "French",
+    "spanish": "Spanish",
+    "german": "German",
+    "italian": "Italian",
+    "japanese": "Japanese",
+    "korean": "Korean",
+    "chinese": "Chinese",
+    "dutch": "Dutch",
+    "russian": "Russian"
+  }
+}

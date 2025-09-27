@@ -1,0 +1,32 @@
+{
+  "ok": "OK",
+  "cancel": "Annuler",
+  "back": "Retour",
+  "next": "Suivant",
+  "done": "Terminé",
+  "save": "Enregistrer",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "loading": "Chargement",
+  "error": "Erreur",
+  "success": "Succès",
+  "retry": "Réessayer",
+  "search": "Recherche",
+  "search_placeholder": "Rechercher villageois, poissons, et plus...",
+  "suggested": "Suggérés",
+  "searching": "Recherche en cours...",
+  "no_results_found": "Aucun résultat",
+  "no_results_description": "Essayez de chercher autre chose",
+  "not_specified": "Non spécifié",
+  "yes": "Oui",
+  "no": "Non",
+  "version": "Version",
+  "unexpected_error": "Une erreur inattendue s'est produite. Veuillez réessayer.",
+  "navigation": {
+    "home": "Accueil",
+    "library": "Bibliothèque",
+    "tools": "Outils",
+    "settings": "Paramètres",
+    "my_island": "Mon île"
+  }
+}

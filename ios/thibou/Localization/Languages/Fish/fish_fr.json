@@ -1,0 +1,44 @@
+{
+  "location": "Lieu",
+  "rarity": "Rareté",
+  "shop_price": "Prix à la boutique",
+  "cj_price": "Prix avec Pollux",
+  "availability": "Disponibilité",
+  "northern_hemisphere": "Nord",
+  "southern_hemisphere": "Sud",
+  "not_available": "-",
+  "months": {
+    "january": "Janvier",
+    "february": "Février",
+    "march": "Mars",
+    "april": "Avril",
+    "may": "Mai",
+    "june": "Juin",
+    "july": "Juillet",
+    "august": "Août",
+    "september": "Septembre",
+    "october": "Octobre",
+    "november": "Novembre",
+    "december": "Décembre"
+  },
+  "fish_location_descriptions": {
+    "sea": "Trouvé dans l'océan autour de votre île",
+    "river": "Trouvé dans les rivières de votre île",
+    "pond": "Trouvé dans les petits étangs de votre île",
+    "pier": "Trouvé à la jetée de votre île"
+  },
+  "basic_information": "Informations de base",
+  "translations": "Traductions",
+  "languages": {
+    "english": "Anglais",
+    "french": "Français",
+    "spanish": "Espagnol",
+    "german": "Allemand",
+    "italian": "Italien",
+    "japanese": "Japonais",
+    "korean": "Coréen",
+    "chinese": "Chinois",
+    "dutch": "Néerlandais",
+    "russian": "Russe"
+  }
+}

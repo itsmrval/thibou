@@ -35,6 +35,28 @@ struct CharacterInfoCard: View {
                                         .font(ThibouTheme.Typography.body)
                                         .foregroundColor(ThibouTheme.Colors.leafGreen)
 
+                                    if let rank = character.popularityRank, rank != "unranked" {
+                                        HStack(spacing: 6) {
+                                            Text("★")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(character.popularityRankColor)
+
+                                            Text(rank)
+                                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                                .foregroundColor(character.popularityRankColor)
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 2)
+                                        .background(
+                                            character.popularityRankColor.opacity(0.1)
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(character.popularityRankColor.opacity(0.3), lineWidth: 0.5)
+                                        )
+                                    }
+
                                 }
                             }
 

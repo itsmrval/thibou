@@ -10,6 +10,7 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
     let personality: String?
     let gender: String
     let birthdayDate: String
+    let popularityRank: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
@@ -17,6 +18,7 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
         case titleColor = "title_color"
         case textColor = "text_color"
         case birthdayDate = "birthday_date"
+        case popularityRank = "popularity_rank"
     }
 
     init(from decoder: Decoder) throws {
@@ -29,6 +31,7 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
         species = try container.decode(String.self, forKey: .species)
         gender = try container.decode(String.self, forKey: .gender)
         birthdayDate = try container.decode(String.self, forKey: .birthdayDate)
+        popularityRank = try container.decodeIfPresent(String.self, forKey: .popularityRank)
         personality = try container.decodeIfPresent(String.self, forKey: .personality)
     }
 
@@ -41,6 +44,7 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
         self.personality = villager.personality
         self.gender = villager.gender
         self.birthdayDate = villager.birthdayDate
+        self.popularityRank = villager.popularityRank
     }
     var displayPersonality: String {
         guard let personality = personality else { return LocalizedKey.notSpecified.localized }
@@ -49,6 +53,38 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
 
     var titleColorValue: Color {
         Color(hex: titleColor) ?? ThibouTheme.Colors.skyBlue
+    }
+
+    var displayPopularityRank: String {
+        guard let rank = popularityRank else { return LocalizedKey.notSpecified.localized }
+        return rank == "unranked" ? LocalizedKey.notSpecified.localized : rank
+    }
+
+    var popularityRankColor: Color {
+        guard let rank = popularityRank, rank != "unranked" else { return .gray }
+
+        switch rank {
+        case "S+":
+            return Color.red
+        case "S":
+            return Color.orange
+        case "A":
+            return Color.yellow
+        case "B":
+            return Color.green
+        case "C":
+            return Color.blue
+        case "D":
+            return Color.indigo
+        case "E":
+            return Color.purple
+        case "F":
+            return Color.brown
+        case "G":
+            return Color.gray
+        default:
+            return Color.gray
+        }
     }
 
     func toVillager() -> Villager {
@@ -61,6 +97,7 @@ struct VillagerSummary: IdentifiableModel, NamedModel, ColoredModel {
             personality: self.personality,
             gender: self.gender,
             birthdayDate: self.birthdayDate,
+            popularityRank: self.popularityRank,
             sign: nil,
             quote: nil,
             house: nil,
@@ -80,6 +117,7 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
     let personality: String?
     let gender: String
     let birthdayDate: String
+    let popularityRank: String?
     let sign: String?
     let quote: VillagerQuote?
     let house: VillagerHouse?
@@ -92,6 +130,7 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
         case titleColor = "title_color"
         case textColor = "text_color"
         case birthdayDate = "birthday_date"
+        case popularityRank = "popularity_rank"
     }
 
     init(from decoder: Decoder) throws {
@@ -104,6 +143,7 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
         species = try container.decode(String.self, forKey: .species)
         gender = try container.decode(String.self, forKey: .gender)
         birthdayDate = try container.decode(String.self, forKey: .birthdayDate)
+        popularityRank = try container.decodeIfPresent(String.self, forKey: .popularityRank)
 
         islander = try container.decodeIfPresent(Bool.self, forKey: .islander)
 
@@ -114,7 +154,7 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
         debut = try container.decodeIfPresent(String.self, forKey: .debut)
     }
 
-    init(id: String, name: VillagerName, titleColor: String, textColor: String, species: String, personality: String?, gender: String, birthdayDate: String, sign: String?, quote: VillagerQuote?, house: VillagerHouse?, islander: Bool?, debut: String?) {
+    init(id: String, name: VillagerName, titleColor: String, textColor: String, species: String, personality: String?, gender: String, birthdayDate: String, popularityRank: String?, sign: String?, quote: VillagerQuote?, house: VillagerHouse?, islander: Bool?, debut: String?) {
         self.id = id
         self.name = name
         self.titleColor = titleColor
@@ -123,6 +163,7 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
         self.personality = personality
         self.gender = gender
         self.birthdayDate = birthdayDate
+        self.popularityRank = popularityRank
         self.sign = sign
         self.quote = quote
         self.house = house
@@ -155,6 +196,38 @@ struct Villager: IdentifiableModel, NamedModel, ColoredModel {
 
     var titleColorValue: Color {
         Color(hex: titleColor) ?? ThibouTheme.Colors.skyBlue
+    }
+
+    var displayPopularityRank: String {
+        guard let rank = popularityRank else { return LocalizedKey.notSpecified.localized }
+        return rank == "unranked" ? LocalizedKey.notSpecified.localized : rank
+    }
+
+    var popularityRankColor: Color {
+        guard let rank = popularityRank, rank != "unranked" else { return .gray }
+
+        switch rank {
+        case "S+":
+            return Color.red
+        case "S":
+            return Color.orange
+        case "A":
+            return Color.yellow
+        case "B":
+            return Color.green
+        case "C":
+            return Color.blue
+        case "D":
+            return Color.indigo
+        case "E":
+            return Color.purple
+        case "F":
+            return Color.brown
+        case "G":
+            return Color.gray
+        default:
+            return Color.gray
+        }
     }
 }
 

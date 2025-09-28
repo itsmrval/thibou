@@ -387,7 +387,7 @@ final class AuthManager: ObservableObject {
         let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
 
         let (data, httpResponse) = try await apiManager.makeRequestWithoutDecoding(
-            endpoint: "/user/\(userId)/password",
+            endpoint: "/user/\(userId)",
             method: .PUT,
             body: bodyData,
             requiresAuth: true

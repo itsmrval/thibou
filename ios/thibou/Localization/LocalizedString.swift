@@ -50,6 +50,7 @@ enum LocalizedKey: String, CaseIterable {
     case gender = "Villager.gender"
     case personality = "Villager.personality"
     case birthday = "Villager.birthday"
+    case popularityRank = "Villager.popularity_rank"
     case gameInformation = "Villager.game_information"
     case astrologicalSign = "Villager.astrological_sign"
     case firstAppearance = "Villager.first_appearance"

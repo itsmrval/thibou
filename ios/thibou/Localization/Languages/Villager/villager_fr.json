@@ -4,6 +4,7 @@
   "gender": "Genre",
   "personality": "Personnalité",
   "birthday": "Anniversaire",
+  "popularity_rank": "Rang de popularité",
   "game_information": "Informations de jeu",
   "astrological_sign": "Signe astrologique",
   "first_appearance": "Première apparition",

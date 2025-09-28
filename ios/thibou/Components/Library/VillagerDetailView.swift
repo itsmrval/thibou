@@ -255,9 +255,11 @@ struct VillagerDetailContent: View {
                         (LocalizedKey.species.localized, LocalizedKey.speciesName(displayVillager.species)),
                         (LocalizedKey.gender.localized, LocalizedKey.genderName(displayVillager.gender)),
                         (LocalizedKey.personality.localized, displayVillager.displayPersonality),
-                        (LocalizedKey.birthday.localized, displayVillager.birthdayDate)
+                        (LocalizedKey.birthday.localized, displayVillager.birthdayDate),
+                        (LocalizedKey.popularityRank.localized, displayVillager.displayPopularityRank)
                     ],
-                    color: ThibouTheme.Colors.leafGreen
+                    color: ThibouTheme.Colors.leafGreen,
+                    villager: displayVillager
                 )
 
                 if let fullVillagerData = fullVillager {
@@ -341,6 +343,14 @@ struct DetailInfoCard: View {
     let title: String
     let items: [(String, String)]
     let color: Color
+    let villager: Villager?
+
+    init(title: String, items: [(String, String)], color: Color, villager: Villager? = nil) {
+        self.title = title
+        self.items = items
+        self.color = color
+        self.villager = villager
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -357,9 +367,24 @@ struct DetailInfoCard: View {
 
                         Spacer()
 
-                        Text(item.1)
-                            .font(ThibouTheme.Typography.boldCallout)
-                            .foregroundColor(.primary)
+                        if item.0 == LocalizedKey.popularityRank.localized, let villager = villager {
+                            HStack(spacing: 8) {
+                                Text(item.1)
+                                    .font(ThibouTheme.Typography.boldCallout)
+                                    .foregroundColor(.primary)
+
+                                if villager.popularityRank != nil && villager.popularityRank != "unranked" {
+                                    Circle()
+                                        .fill(villager.popularityRankColor)
+                                        .frame(width: 12, height: 12)
+                                        .shadow(color: villager.popularityRankColor.opacity(0.5), radius: 2, x: 0, y: 1)
+                                }
+                            }
+                        } else {
+                            Text(item.1)
+                                .font(ThibouTheme.Typography.boldCallout)
+                                .foregroundColor(.primary)
+                        }
                     }
 
                     if index < items.count - 1 {

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { check, validationResult } = require('express-validator');
 const { ratelimitMiddleware } = require('../middlewares/ratelimit.middleware');
 const { authMiddleware } = require('../middlewares/auth.middleware');
+const { recentAuthMiddleware } = require('../middlewares/recent-auth.middleware');
 const { 
     getUserList,
     getUser,
@@ -62,6 +63,7 @@ router.get('/:id',
 
 router.put('/:id',
     authMiddleware(['user:own:write']),
+    recentAuthMiddleware(10, ['user:own:write']),
     [
         check('name').optional().isString().isLength({ min: 1, max: 100 }),
         check('email').optional().isEmail(),

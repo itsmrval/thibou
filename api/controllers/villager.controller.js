@@ -30,6 +30,7 @@ const getVillagerList = async (filters = {}) => {
             species: villager.species,
             gender: villager.gender,
             birthday_date: villager.birthday_date,
+            popularity_rank: villager.popularity_rank,
             ready: villager.ready,
             createdAt: villager.createdAt,
             updatedAt: villager.updatedAt

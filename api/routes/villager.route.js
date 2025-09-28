@@ -74,7 +74,8 @@ router.post('/',
         check('sign').notEmpty().withMessage('Sign is required'),
         check('quote.en').notEmpty().withMessage('Original quote is required'),
         check('islander').isBoolean().withMessage('Islander must be a boolean'),
-        check('debut').notEmpty().withMessage('Debut is required')
+        check('debut').notEmpty().withMessage('Debut is required'),
+        check('popularity_rank').optional().isIn(['S+', 'S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'unranked']).withMessage('Popularity rank must be one of: S+, S, A, B, C, D, E, F, G, unranked')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);
@@ -108,7 +109,8 @@ router.put('/:id',
         check('text_color').optional().matches(/^[0-9a-fA-F]{6}$/).withMessage('Text color must be a valid hex color'),
         check('gender').optional().isIn(['male', 'female']).withMessage('Gender must be male or female'),
         check('birthday_date').optional().matches(/^\d{2}-\d{2}$/).withMessage('Birthday date must be in DD-MM format'),
-        check('islander').optional().isBoolean().withMessage('Islander must be a boolean')
+        check('islander').optional().isBoolean().withMessage('Islander must be a boolean'),
+        check('popularity_rank').optional().isIn(['S+', 'S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'unranked']).withMessage('Popularity rank must be one of: S+, S, A, B, C, D, E, F, G, unranked')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);

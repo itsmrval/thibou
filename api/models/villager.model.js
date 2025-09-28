@@ -127,6 +127,11 @@ const VillagerSchema = new mongoose.Schema({
         NH: String,
         PC: String
     },
+    popularity_rank: {
+        type: String,
+        default: 'unranked',
+        enum: ['S+', 'S', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'unranked']
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -148,6 +153,7 @@ VillagerSchema.index({ 'name.en': 1 });
 VillagerSchema.index({ species: 1 });
 VillagerSchema.index({ personality: 1 });
 VillagerSchema.index({ gender: 1 });
+VillagerSchema.index({ popularity_rank: 1 });
 
 VillagerSchema.set('toJSON', {
     virtuals: true,
@@ -167,6 +173,7 @@ VillagerSchema.set('toJSON', {
             islander: ret.islander,
             debut: ret.debut,
             appearances: ret.appearances,
+            popularity_rank: ret.popularity_rank,
             createdAt: ret.createdAt,
             updatedAt: ret.updatedAt
         };

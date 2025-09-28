@@ -63,7 +63,7 @@ router.post('/',
         check('weather').isIn(['any', 'rain']).withMessage('Weather must be one of: any, rain'),
         check('price.shop').isNumeric().withMessage('Shop price must be a number'),
         check('price.flick').isNumeric().withMessage('Flick price must be a number'),
-        check('rarity').optional().isIn(['common', 'uncommon', 'rare']).withMessage('Rarity must be one of: common, uncommon, rare')
+        check('rarity').optional().isIn(['very_common', 'common', 'uncommon', 'rare']).withMessage('Rarity must be one of: very_common, common, uncommon, rare')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);
@@ -97,7 +97,7 @@ router.put('/:id',
         check('weather').optional().isIn(['any', 'rain']).withMessage('Weather must be one of: any, rain'),
         check('price.shop').optional().isNumeric().withMessage('Shop price must be a number'),
         check('price.flick').optional().isNumeric().withMessage('Flick price must be a number'),
-        check('rarity').optional().isIn(['common', 'uncommon', 'rare']).withMessage('Rarity must be one of: common, uncommon, rare')
+        check('rarity').optional().isIn(['very_common', 'common', 'uncommon', 'rare']).withMessage('Rarity must be one of: very_common, common, uncommon, rare')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);

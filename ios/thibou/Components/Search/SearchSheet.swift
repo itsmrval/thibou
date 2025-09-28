@@ -197,6 +197,36 @@ struct SearchSheet: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: $showBugDetail) {
+            if let bug = selectedBug {
+                let allSearchBugs = searchText.isEmpty ?
+                    suggestedBugs.map { $0.toBug() } :
+                    searchResults.bugs.map { $0.toBug() }
+
+                NavigationStack {
+                    BugDetailView(
+                        bug: bug.toBug(),
+                        allBugs: allSearchBugs,
+                        onToggleFavorite: { _ in },
+                        onShare: { _ in }
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showBugDetail = false
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onAppear {
             loadSuggestions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -316,9 +346,11 @@ struct SuggestionsView: View {
                     }
                 }
 
-                if !suggestedFish.isEmpty {
+                if !suggestedFish.isEmpty || !suggestedBugs.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
                         LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8),
                             GridItem(.flexible(), spacing: 8),
                             GridItem(.flexible(), spacing: 8)
                         ], spacing: 12) {
@@ -327,17 +359,7 @@ struct SuggestionsView: View {
                                     onFishTap(fish)
                                 }
                             }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                }
 
-                if !suggestedBugs.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
-                        LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 8),
-                            GridItem(.flexible(), spacing: 8)
-                        ], spacing: 12) {
                             ForEach(Array(suggestedBugs.prefix(2))) { bug in
                                 BugSuggestionCard(bug: bug) {
                                     onBugTap(bug)
@@ -676,6 +698,127 @@ struct FishSuggestionCard: View {
                     .stroke(.white.opacity(0.1), lineWidth: 0.5)
             )
             .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct BugSuggestionCard: View {
+    let bug: BugSummary
+    let onTap: () -> Void
+
+    @StateObject private var languageManager = LanguageManager.shared
+
+    var body: some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap()
+        }) {
+            VStack(spacing: 8) {
+                BugImageView(
+                    bugId: bug.id,
+                    imageType: "full",
+                    width: 50,
+                    height: 50,
+                    cornerRadius: 12,
+                    placeholderColor: bug.titleColorValue
+                )
+                .shadow(color: bug.titleColorValue.opacity(0.2), radius: 6, x: 0, y: 3)
+
+                VStack(spacing: 2) {
+                    Text(bug.nameForLanguage(languageManager.selectedLanguage.rawValue))
+                        .font(ThibouTheme.Typography.caption)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    HStack(spacing: 2) {
+                        Text("\(bug.shopPrice)")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundColor(.green)
+
+                        Image("bells_single")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial.opacity(0.8), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct BugSearchCard: View {
+    let bug: BugSummary
+    let onTap: () -> Void
+
+    @StateObject private var languageManager = LanguageManager.shared
+
+    var body: some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap()
+        }) {
+            HStack(spacing: 16) {
+                BugImageView(
+                    bugId: bug.id,
+                    imageType: "full",
+                    width: 70,
+                    height: 70,
+                    cornerRadius: 18,
+                    placeholderColor: bug.titleColorValue
+                )
+                .shadow(color: bug.titleColorValue.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(bug.nameForLanguage(languageManager.selectedLanguage.rawValue))
+                        .font(ThibouTheme.Typography.headline)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Text(LocalizedKey.bugLocation(bug.location))
+                            .font(ThibouTheme.Typography.callout)
+                            .foregroundColor(.secondary)
+
+                        Text("•")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: 3) {
+                            Text("\(bug.shopPrice)")
+                                .font(ThibouTheme.Typography.callout)
+                                .foregroundColor(.green)
+
+                            Image("bells_single")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(16)
+            .background(.regularMaterial.opacity(0.8), in: RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
         }
         .buttonStyle(PlainButtonStyle())
     }

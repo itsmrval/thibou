@@ -86,7 +86,7 @@ router.post('/system', ratelimitMiddleware(5), [
             token,
             tokenType: 'system',
             expiresIn: '1h',
-            scopes: ['villager:admin']
+            scopes: ['villager:admin', 'bug:admin', 'fish:admin']
         });
     } catch (error) {
         log(`System authentication error: ${error.message}`, 'error');

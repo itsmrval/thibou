@@ -42,6 +42,7 @@ app.use('/user', require('./routes/user.route'));
 app.use('/sso', require('./routes/sso.route'));
 app.use('/villager', require('./routes/villager.route'));
 app.use('/fish', require('./routes/fish.route'));
+app.use('/bug', require('./routes/bug.route'));
 log('Routes imported');
 app.listen(process.env.PORT || 3010, () => {
     log('Server running on port ' + process.env.PORT || 3010);

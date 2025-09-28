@@ -3,17 +3,43 @@ import SwiftUI
 import Combine
 import AuthenticationServices
 
+struct SSOProvider: Codable {
+    let provider: String
+    let id: String?
+}
+
 struct User: Codable {
     let id: String
     let name: String
     let email: String?
     let role: String
-    let hasAppleSSO: Bool?
+    let ssoProviders: [SSOProvider]
     let hasPassword: Bool?
+    let createdAt: String?
+    let version: Int?
+    let scopes: [String]?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case name, email, role, hasAppleSSO, hasPassword
+        case name, email, role, ssoProviders, hasPassword, createdAt, scopes
+        case version = "__v"
+    }
+
+    var hasAppleSSO: Bool {
+        return ssoProviders.contains { $0.provider == "apple" }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        role = try container.decode(String.self, forKey: .role)
+        ssoProviders = try container.decodeIfPresent([SSOProvider].self, forKey: .ssoProviders) ?? []
+        hasPassword = try container.decodeIfPresent(Bool.self, forKey: .hasPassword)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        version = try container.decodeIfPresent(Int.self, forKey: .version)
+        scopes = try container.decodeIfPresent([String].self, forKey: .scopes)
     }
 }
 
@@ -197,6 +223,10 @@ final class AuthManager: ObservableObject {
             default:
                 throw AuthError.networkError
             }
+        } catch let decodingError as DecodingError {
+            throw AuthError.serverError("Registration response parsing failed: \(decodingError.localizedDescription)")
+        } catch {
+            throw AuthError.serverError("Registration failed: \(error.localizedDescription)")
         }
     }
 

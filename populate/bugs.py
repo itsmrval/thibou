@@ -29,17 +29,13 @@ class BugPopulator(BasePopulator):
         return bugs
 
     def normalize_location(self, location: str) -> str:
-        """Normalize bug location to predefined categories"""
         location_mapping = {
-            # Flying locations
             "Flying": "flying",
             "Flying near flowers": "flying",
             "Flying near blue, purple, and black flowers": "flying",
             "Flying near light sources": "flying",
             "Flying near water": "flying",
             "Flying near trash or rotten turnips": "flying",
-
-            # Tree locations
             "On trees (any kind)": "trees",
             "On trees (hardwood and cedar)": "trees",
             "On palm trees": "trees",
@@ -47,38 +43,23 @@ class BugPopulator(BasePopulator):
             "Shaking trees (hardwood and cedar)": "trees",
             "Shaking non-fruit hardwood trees or cedar trees": "trees",
             "Disguised under trees": "trees",
-
-            # Ground locations
             "On the ground": "ground",
             "Underground": "ground",
             "Pushing snowballs": "ground",
-
-            # Flower locations
             "On flowers": "flowers",
             "On white flowers": "flowers",
-
-            # Water locations
             "On rivers and ponds": "water",
-
-            # Rock locations
             "On beach rocks": "rocks",
             "On rocks and bushes": "rocks",
             "From hitting rocks": "rocks",
-
-            # Stump locations
             "On tree stumps": "stumps",
-
-            # Villager locations
             "On villagers": "villagers",
-
-            # Special locations
             "On/near spoiled turnips/candy/lollipops": "special",
             "Disguised on shoreline": "special"
         }
         return location_mapping.get(location, "ground")
 
     def normalize_weather(self, weather: str) -> str:
-        """Normalize bug weather conditions"""
         weather_mapping = {
             "Any weather": "any",
             "Any except rain": "any",
@@ -87,13 +68,11 @@ class BugPopulator(BasePopulator):
         return weather_mapping.get(weather, "any")
 
     def normalize_rarity(self, rarity: str) -> str:
-        """Normalize rarity, defaulting to common if empty"""
         if not rarity or rarity.strip() == "":
             return "common"
         return rarity.lower().replace(" ", "_")
 
     def parse_time_range(self, time_str: str) -> Dict:
-        """Parse time ranges like '8 AM – 5 PM' into begin/end hours"""
         if not time_str or time_str.lower() == "all day" or time_str == "NA":
             return None
 
@@ -127,7 +106,6 @@ class BugPopulator(BasePopulator):
         return {"begin": begin_time, "end": end_time}
 
     def transform_availability(self, north_data: Dict, south_data: Dict) -> Dict:
-        """Transform availability data to match fish format"""
         availability = {
             "north": {},
             "south": {}
@@ -150,7 +128,6 @@ class BugPopulator(BasePopulator):
         return availability
 
     def transform_bug_data(self, nookipedia_bug: Dict) -> Dict:
-        """Transform Nookipedia bug data to our API format"""
 
         availability = self.transform_availability(
             nookipedia_bug.get("north", {}),
@@ -183,7 +160,6 @@ class BugPopulator(BasePopulator):
         return transformed_bug
 
     def populate_single_bug(self, bug: Dict) -> Dict:
-        """Populate a single bug to the API"""
         headers = {
             'Authorization': f'Bearer {self.system_token}',
             'Content-Type': 'application/json'
@@ -200,8 +176,32 @@ class BugPopulator(BasePopulator):
 
         return response.json()
 
+    def upload_bug_image(self, bug_id: str, image_type: str, image_data: str) -> Dict:
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.system_token}',
+                'Content-Type': 'application/json'
+            }
+
+            url = f"{self.api_base_url}/bug/{bug_id}/img/{image_type}"
+
+            response = self.session.post(
+                url,
+                json={"image_data": image_data},
+                headers=headers
+            )
+
+            if response.status_code not in [200, 201]:
+                raise Exception(f"Failed to upload bug image: {response.text}")
+
+            print(f"✓ Bug image uploaded successfully: {image_type}")
+            return response.json()
+
+        except Exception as e:
+            print(f"✗ Failed to upload bug image {image_type}: {str(e)}")
+            raise
+
     def populate_bugs_to_api(self, bugs: List[Dict]) -> List[str]:
-        """Populate bugs to API and return list of created bug IDs"""
         print(f"Populating database with {len(bugs)} bugs...")
 
         success_count = 0
@@ -222,6 +222,20 @@ class BugPopulator(BasePopulator):
                 print(f"✓ Successfully created bug: {transformed_bug['name']['en']} ({bug_id})")
                 created_bug_ids.append(bug_id)
 
+                if 'image_url' in bug and bug['image_url']:
+                    try:
+                        image_data = self.download_image_as_base64(bug['image_url'])
+                        self.upload_bug_image(bug_id, 'full', image_data)
+                    except Exception as e:
+                        print(f"✗ Failed to upload full image for {bug['name']}: {str(e)}")
+
+                if 'render_url' in bug and bug['render_url']:
+                    try:
+                        image_data = self.download_image_as_base64(bug['render_url'])
+                        self.upload_bug_image(bug_id, 'small', image_data)
+                    except Exception as e:
+                        print(f"✗ Failed to upload small image for {bug['name']}: {str(e)}")
+
                 success_count += 1
 
             except Exception as e:
@@ -238,7 +252,6 @@ class BugPopulator(BasePopulator):
         return created_bug_ids
 
     def enhance_with_name_translations(self) -> None:
-        """Enhance bugs with translated names from web scraping"""
         if self.avoid_translations:
             print("Skipping name translations (--avoid-translations flag)")
             return
@@ -258,7 +271,6 @@ class BugPopulator(BasePopulator):
             print(f"✗ Bug name enhancement failed: {e}")
 
     def _scrape_bug_names_data(self, bug_names: List[str]) -> Dict:
-        """Scrape bug name translations from Nookipedia website"""
         print("Scraping bug name translations from Nookipedia website...")
 
         nookipedia_url = "https://nookipedia.com/wiki/Bug"
@@ -273,82 +285,102 @@ class BugPopulator(BasePopulator):
         if not table:
             raise Exception("Could not find the sortable bug table on the page")
 
-        bug_names_data = {}
+        bug_links = {}
         rows = table.find_all('tr')[1:]
 
         for row in rows:
-            try:
-                cells = row.find_all('td')
-                if len(cells) >= 2:
-                    name_cell = cells[0]
-                    bug_link = name_cell.find('a')
+            cells = row.find_all('td')
+            if len(cells) >= 1:
+                bug_cell = cells[0]
+                bug_link = bug_cell.find('a')
+                if bug_link and bug_link.get('href'):
+                    bug_name = bug_link.get_text(strip=True)
+                    bug_url = f"https://nookipedia.com{bug_link.get('href')}"
+                    bug_links[bug_name] = bug_url
 
-                    if bug_link and bug_link.get('href'):
-                        bug_name = bug_link.get_text(strip=True)
-                        if bug_name in bug_names:
-                            bug_url = f"https://nookipedia.com{bug_link['href']}"
-                            print(f"Scraping {bug_name} from {bug_url}")
+        print(f"Found {len(bug_links)} bug page links")
 
-                            bug_data = self._scrape_individual_bug_page(bug_url)
-                            if bug_data:
-                                bug_names_data[bug_name] = bug_data
+        def normalize_name(name):
+            return name.lower().strip().replace("'", "'")
 
-            except Exception as e:
-                print(f"⚠ Warning: Failed to scrape {bug_name}: {str(e)}")
+        api_names_normalized = {normalize_name(name): name for name in bug_names}
+        table_names_normalized = {normalize_name(name): name for name in bug_links.keys()}
 
+        print(f"Debug: API has {len(api_names_normalized)} normalized names")
+        print(f"Debug: Table has {len(table_names_normalized)} normalized names")
+
+        bug_names_data = {}
+        matched_count = 0
+
+        for normalized_table_name, original_table_name in table_names_normalized.items():
+            if normalized_table_name in api_names_normalized:
+                matched_count += 1
+                api_name = api_names_normalized[normalized_table_name]
+                bug_url = bug_links[original_table_name]
+
+                try:
+                    print(f"Scraping {original_table_name} from {bug_url}")
+                    bug_data = self._scrape_individual_bug_page(bug_url)
+                    if bug_data:
+                        bug_names_data[api_name] = bug_data
+                except Exception as e:
+                    print(f"⚠ Warning: Failed to scrape {original_table_name}: {str(e)}")
+
+        print(f"Debug: Matched {matched_count} bugs out of {len(bug_links)} table entries")
         print(f"Successfully parsed name data for {len(bug_names_data)} bugs")
         return bug_names_data
 
     def _scrape_individual_bug_page(self, bug_url: str) -> Dict:
-        """Scrape individual bug page for translations"""
         response = self.session.get(bug_url)
         if response.status_code != 200:
             return None
 
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        translations_section = soup.find('span', {'id': 'Names_in_other_languages'})
-        if not translations_section:
+        lang_section = soup.find('td', {'id': 'lang1'})
+        if not lang_section:
             return None
 
-        table = translations_section.find_parent().find_next('table')
-        if not table:
-            return None
+        names = {'en': ''}
 
-        names = {"en": ""}
+        lang_mapping = {
+            'infobox-flag-ja': 'jp',
+            'infobox-flag-ko': 'ko',
+            'infobox-flag-it': 'it',
+            'infobox-flag-de': 'de',
+            'infobox-flag-zh': 'zh',
+            'infobox-flag-zht': 'zh',
+            'infobox-flag-fr': 'fr',
+            'infobox-flag-es': 'es',
+            'infobox-flag-esl': 'es',
+            'infobox-flag-nl': 'nl',
+            'infobox-flag-ru': 'ru'
+        }
 
-        for row in table.find_all('tr')[1:]:
-            cells = row.find_all('td')
-            if len(cells) >= 2:
-                language_cell = cells[0]
-                name_cell = cells[1]
+        flag_divs = lang_section.find_all('div', class_=re.compile(r'infobox-flag'))
+        for flag_div in flag_divs:
+            classes = flag_div.get('class', [])
+            lang_code = None
 
-                language_img = language_cell.find('img')
-                if language_img and language_img.get('alt'):
-                    language = language_img['alt'].lower()
-                    name_text = name_cell.get_text(strip=True)
+            for cls in classes:
+                if cls in lang_mapping:
+                    lang_code = lang_mapping[cls]
+                    break
 
-                    if name_text and name_text != 'N/A':
-                        language_mapping = {
-                            'japanese': 'jp',
-                            'korean': 'ko',
-                            'chinese (simplified)': 'zh',
-                            'russian': 'ru',
-                            'dutch': 'nl',
-                            'german': 'de',
-                            'spanish': 'es',
-                            'french': 'fr',
-                            'italian': 'it'
-                        }
-
-                        mapped_lang = language_mapping.get(language)
-                        if mapped_lang:
-                            names[mapped_lang] = name_text
+            if lang_code:
+                next_element = flag_div.next_sibling
+                while next_element:
+                    if next_element.name == 'span':
+                        text = next_element.get_text(strip=True)
+                        if text and text != 'N/A':
+                            if not (lang_code == 'zh' and 'infobox-flag-zht' in classes and names.get('zh')):
+                                names[lang_code] = text
+                        break
+                    next_element = next_element.next_sibling
 
         return {'name': names} if len(names) > 1 else None
 
     def _apply_bug_name_enhancements(self, bugs: List[Dict], names_data: Dict) -> None:
-        """Apply name enhancements to bugs"""
         print("Applying name enhancements...")
 
         matched_count = 0
@@ -377,7 +409,6 @@ class BugPopulator(BasePopulator):
         print(f"Enhanced {matched_count} bugs with translated names")
 
     def run(self):
-        """Run the complete bugs workflow"""
         try:
             print("Starting Global Bugs Population Process...")
             print(f"Configuration:")
@@ -388,11 +419,9 @@ class BugPopulator(BasePopulator):
             self.get_system_token()
             print("")
 
-            # Step 1: Populate bugs from Nookipedia API
             bugs_data = self.fetch_bugs_from_nookipedia()
             created_ids = self.populate_bugs_to_api(bugs_data)
 
-            # Step 2: Enhance with name translations (if not avoided)
             self.enhance_with_name_translations()
 
             print(f"\n{'='*50}")

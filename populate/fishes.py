@@ -257,7 +257,7 @@ class FishPopulator(BasePopulator):
         table = soup.find('table', {'class': 'sortable'})
 
         if not table:
-            raise Exception("Could not find the fish table on the page")
+            raise Exception("Could not find the sortable fish table on the page")
 
         fish_links = {}
         rows = table.find_all('tr')[1:]
@@ -274,17 +274,33 @@ class FishPopulator(BasePopulator):
 
         print(f"Found {len(fish_links)} fish page links")
 
+        def normalize_name(name):
+            return name.lower().strip().replace("'", "'")
+
+        api_names_normalized = {normalize_name(name): name for name in fish_names}
+        table_names_normalized = {normalize_name(name): name for name in fish_links.keys()}
+
+        print(f"Debug: API has {len(api_names_normalized)} normalized names")
+        print(f"Debug: Table has {len(table_names_normalized)} normalized names")
+
         fish_names_data = {}
-        for fish_name, fish_url in fish_links.items():
-            if fish_name in fish_names:
+        matched_count = 0
+
+        for normalized_table_name, original_table_name in table_names_normalized.items():
+            if normalized_table_name in api_names_normalized:
+                matched_count += 1
+                api_name = api_names_normalized[normalized_table_name]
+                fish_url = fish_links[original_table_name]
+
                 try:
-                    print(f"Scraping translations for {fish_name}...")
+                    print(f"Scraping {original_table_name} from {fish_url}")
                     fish_data = self._scrape_individual_fish_page(fish_url)
                     if fish_data:
-                        fish_names_data[fish_name] = fish_data
+                            fish_names_data[api_name] = fish_data
                 except Exception as e:
-                    print(f"⚠ Warning: Failed to scrape {fish_name}: {str(e)}")
+                    print(f"⚠ Warning: Failed to scrape {original_table_name}: {str(e)}")
 
+        print(f"Debug: Matched {matched_count} fish out of {len(fish_links)} table entries")
         print(f"Successfully parsed name data for {len(fish_names_data)} fishes")
         return fish_names_data
 

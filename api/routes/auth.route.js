@@ -81,8 +81,8 @@ router.post('/system', ratelimitMiddleware(5), [
 
         const token = authUtil.generateSystemToken();
         
-        return res.status(200).json({ 
-            message: 'System token generated successfully', 
+        return res.status(200).json({
+            message: 'System token generated successfully',
             token,
             tokenType: 'system',
             expiresIn: '1h',

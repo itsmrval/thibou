@@ -2,7 +2,7 @@ const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const defaultAdminScopes = ['user:admin', 'sso:admin', 'villager:admin', 'villager:write', 'villager:read', 'fish:admin'];
+const defaultAdminScopes = ['user:admin', 'sso:admin', 'villager:admin', 'villager:write', 'villager:read', 'fish:admin', 'bug:admin', 'bug:write'];
 const defaultUserScopes = ['user:own:read', 'user:own:write', 'user:read', 'sso:own:read', 'sso:own:write', 'villager:read'];
 
 
@@ -66,21 +66,22 @@ const isRecentToken = (tokenPayload, maxAgeMinutes = 10) => {
 }
 
 const generateSystemToken = () => {
+    const systemScopes = ['villager:admin', 'bug:admin', 'fish:admin'];
     const payload = {
         user: {
             id: 'system-token',
             email: 'system@local.dev',
             name: 'System Token',
-            scopes: defaultAdminScopes,
+            scopes: systemScopes,
             role: 'system'
         },
         iat: Math.floor(Date.now() / 1000),
         iss: 'auth-api',
         type: 'system'
     };
-    
-    return jwt.sign(payload, process.env.JWT_SECRET, { 
-        expiresIn: '1y',
+
+    return jwt.sign(payload, process.env.JWT_SECRET, {
+        expiresIn: '1h',
         jwtid: 'system-token'
     });
 }
@@ -91,5 +92,6 @@ module.exports = {
     generateJWT,
     verifyJWT,
     isRecentToken,
-    generateSystemToken
+    generateSystemToken,
+    defaultAdminScopes
 };

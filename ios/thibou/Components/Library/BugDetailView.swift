@@ -343,6 +343,12 @@ struct BugLocationCard: View {
             return "BugIcons/rocks"
         case "stumps":
             return "BugIcons/stumps"
+        case "water":
+            return "BugIcons/water"
+        case "special":
+            return "BugIcons/special"
+        case "villager", "villagers":
+            return "BugIcons/villager"
         default:
             return "BugIcons/trees"
         }

@@ -23,17 +23,17 @@
     "december": "December"
   },
   "bug_location_descriptions": {
-    "flying": "Found flying around your island",
-    "trees": "Found on trees around your island",
-    "ground": "Found on the ground around your island",
-    "flowers": "Found on flowers around your island",
-    "water": "Found in water bodies on your island",
-    "rocks": "Found on rocks around your island",
+    "flying": "Found flying around on your island",
+    "trees": "Found on trees on your island",
+    "ground": "Found on the ground on your island",
+    "flowers": "Found on flowers on your island",
+    "water": "Found in water on your island",
+    "rocks": "Found on rocks on your island",
     "stumps": "Found on tree stumps around your island",
     "villagers": "Found on villagers on your island",
-    "special": "Found in special locations on your island"
+    "special": "It looks like it's a mystery..."
   },
-  "basic_information": "Basic Information",
+  "basic_information": "Basic information",
   "translations": "Translations",
   "languages": {
     "english": "English",

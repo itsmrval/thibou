@@ -23,15 +23,15 @@
     "december": "Décembre"
   },
   "bug_location_descriptions": {
-    "flying": "Trouvé en vol autour de votre île",
-    "trees": "Trouvé sur les arbres de votre île",
-    "ground": "Trouvé au sol autour de votre île",
+    "flying": "Trouvé en vol sur votre île",
+    "trees": "Trouvé dans les arbres de votre île",
+    "ground": "Trouvé au sol de votre île",
     "flowers": "Trouvé sur les fleurs de votre île",
     "water": "Trouvé dans les points d'eau de votre île",
     "rocks": "Trouvé sur les rochers de votre île",
     "stumps": "Trouvé sur les souches d'arbres de votre île",
     "villagers": "Trouvé sur les villageois de votre île",
-    "special": "Trouvé dans des lieux spéciaux de votre île"
+    "special": "Je pense que c'est un mystère..."
   },
   "basic_information": "Informations de base",
   "translations": "Traductions",

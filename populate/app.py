@@ -33,6 +33,7 @@ class GlobalPopulateApp:
             Options for villagers:
             --avoid-enhancements        - Skip house enhancements (only populate base data)
             --avoid-translations        - Skip name translations (populate + house only)
+            --avoid-rank-enhancements   - Skip popularity rank enhancements
 
             Options for fishes:
             --avoid-translations        - Skip name translations (only populate base data)
@@ -66,6 +67,12 @@ class GlobalPopulateApp:
         )
 
         parser.add_argument(
+            '--avoid-rank-enhancements',
+            action='store_true',
+            help='skip popularity rank enhancements'
+        )
+
+        parser.add_argument(
             '--help-types',
             action='store_true',
             help='show available types'
@@ -88,7 +95,8 @@ class GlobalPopulateApp:
                 from villagers import VillagersGlobalPopulator
                 populator = VillagersGlobalPopulator(
                     avoid_enhancements=parsed_args.avoid_enhancements,
-                    avoid_translations=parsed_args.avoid_translations
+                    avoid_translations=parsed_args.avoid_translations,
+                    avoid_rank_enhancements=parsed_args.avoid_rank_enhancements
                 )
                 populator.run()
             elif data_type == 'fishes':

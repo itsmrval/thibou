@@ -15,10 +15,11 @@ import re
 from base_populator import BasePopulator, BaseWebPopulator
 
 class VillagersGlobalPopulator(BasePopulator):
-    def __init__(self, avoid_enhancements: bool = False, avoid_translations: bool = False):
+    def __init__(self, avoid_enhancements: bool = False, avoid_translations: bool = False, avoid_rank_enhancements: bool = False):
         super().__init__()
         self.avoid_enhancements = avoid_enhancements
         self.avoid_translations = avoid_translations
+        self.avoid_rank_enhancements = avoid_rank_enhancements
 
         if not self.nookipedia_api_key:
             raise ValueError("NOOKIPEDIA_API_KEY not found in environment variables")
@@ -316,7 +317,6 @@ class VillagersGlobalPopulator(BasePopulator):
             if not names.get('en') or names['en'] == 'N/A':
                 return None
 
-            # Extract all language columns
             language_mapping = {
                 1: 'jp',    # Japanese
                 2: 'es',    # Spanish
@@ -332,7 +332,6 @@ class VillagersGlobalPopulator(BasePopulator):
             for col_index, lang_code in language_mapping.items():
                 if col_index < len(cells):
                     if lang_code == 'zh':
-                        # Special handling for Chinese - extract only simplified text
                         text = self._extract_chinese_simplified(cells[col_index])
                     else:
                         text = self._extract_name_from_cell(cells[col_index])
@@ -367,17 +366,14 @@ class VillagersGlobalPopulator(BasePopulator):
         if not text or text == 'N/A':
             return None
 
-        # Look for "Simplified:" pattern first
         simplified_match = re.search(r'Simplified:\s*([^\n\r]+?)(?:\s*Traditional:|$)', text)
         if simplified_match:
             return simplified_match.group(1).strip()
 
-        # If no "Simplified:" label, check if it's just a single Chinese name without labels
         lines = text.split('\n')
         for line in lines:
             line = line.strip()
             if line and not line.startswith('Traditional:') and not line.startswith('Simplified:'):
-                # If it's just Chinese characters without any label, assume it's simplified
                 if re.search(r'[\u4e00-\u9fff]', line):
                     return line
 
@@ -421,7 +417,6 @@ class VillagersGlobalPopulator(BasePopulator):
                     if house_info:
                         self.update_villager_house_info(villager_id, house_info)
 
-                    # Process images
                     image_types = []
                     if house_info_data.get('small_icon_image_url'):
                         image_types.append(('small', house_info_data['small_icon_image_url']))
@@ -463,7 +458,6 @@ class VillagersGlobalPopulator(BasePopulator):
                 try:
                     updated_names = villager['name'].copy()
 
-                    # Update all available language translations
                     languages = ['jp', 'es', 'fr', 'de', 'it', 'ko', 'zh', 'nl', 'ru']
                     for lang in languages:
                         if name_info['name'].get(lang):
@@ -478,6 +472,75 @@ class VillagersGlobalPopulator(BasePopulator):
 
         print(f"Enhanced {matched_count} villagers with translated names")
 
+    def enhance_with_popularity_ranks(self) -> None:
+        """Enhance villagers with popularity ranks from villagerRanks.json"""
+        if self.avoid_rank_enhancements:
+            print("Skipping popularity rank enhancements (--avoid-rank-enhancements flag)")
+            return
+
+        print("\n" + "="*50)
+        print("ENHANCING WITH POPULARITY RANKS")
+        print("="*50)
+
+        try:
+            villagers = self.get_villagers_from_api()
+            villager_names = [villager['name']['en'] for villager in villagers if villager.get('name', {}).get('en')]
+
+            ranks_data = self._load_popularity_ranks()
+            self._apply_popularity_rank_enhancements(villagers, ranks_data)
+
+        except Exception as e:
+            print(f"✗ Popularity rank enhancement failed: {e}")
+
+    def _load_popularity_ranks(self) -> Dict:
+        """Load popularity ranks from villagerRanks.json"""
+        print("Loading villager popularity ranks from villagerRanks.json...")
+
+        try:
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            ranks_file = os.path.join(current_dir, 'villagerRanks.json')
+
+            with open(ranks_file, 'r', encoding='utf-8') as f:
+                ranks_data = json.load(f)
+
+            print(f"Successfully loaded popularity ranks for {len(ranks_data)} villagers")
+            return ranks_data
+
+        except FileNotFoundError:
+            raise Exception("villagerRanks.json not found in populate directory")
+        except json.JSONDecodeError as e:
+            raise Exception(f"Invalid JSON in villagerRanks.json: {e}")
+
+    def _apply_popularity_rank_enhancements(self, villagers: List[Dict], ranks_data: Dict) -> None:
+        """Apply popularity rank enhancements to villagers"""
+        print("Applying popularity rank enhancements...")
+
+        matched_count = 0
+        updated_count = 0
+
+        for villager in villagers:
+            villager_name = villager['name']['en']
+            villager_id = villager['_id']
+            current_rank = villager.get('popularity_rank', 'unranked')
+            new_rank = ranks_data.get(villager_name, 'unranked')
+
+            if villager_name in ranks_data:
+                matched_count += 1
+
+                if current_rank != new_rank:
+                    try:
+                        self.update_villager_popularity_rank(villager_id, new_rank)
+                        updated_count += 1
+                        print(f"✓ Updated {villager_name}: {current_rank} → {new_rank}")
+                    except Exception as e:
+                        print(f"✗ Failed to update popularity rank for {villager_name}: {str(e)}")
+                else:
+                    print(f"- {villager_name}: already has rank {current_rank}")
+
+        print(f"Matched {matched_count} villagers with popularity ranks")
+        print(f"Updated {updated_count} villagers with new popularity ranks")
+
     def run(self):
         """Run the complete villagers workflow"""
         try:
@@ -485,21 +548,21 @@ class VillagersGlobalPopulator(BasePopulator):
             print(f"Configuration:")
             print(f"  - Avoid enhancements: {self.avoid_enhancements}")
             print(f"  - Avoid translations: {self.avoid_translations}")
+            print(f"  - Avoid rank enhancements: {self.avoid_rank_enhancements}")
             print(f"  - API Base URL: {self.api_base_url}")
             print("")
 
             self.get_system_token()
             print("")
 
-            # Step 1: Populate villagers from Nookipedia API
             villagers_data = self.fetch_villagers_from_nookipedia()
-            created_ids = self.populate_villagers_to_api(villagers_data)
+            self.populate_villagers_to_api(villagers_data)
 
-            # Step 2: Enhance with house data (if not avoided)
             self.enhance_with_house_data()
 
-            # Step 3: Enhance with name translations (if not avoided)
             self.enhance_with_name_translations()
+
+            self.enhance_with_popularity_ranks()
 
             print(f"\n{'='*50}")
             print("GLOBAL VILLAGERS PROCESS COMPLETED SUCCESSFULLY!")

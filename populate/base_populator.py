@@ -191,6 +191,31 @@ class BasePopulator(ABC):
             print(f"✗ Failed to update names: {str(e)}")
             raise
 
+    def update_villager_popularity_rank(self, villager_id: str, popularity_rank: str) -> Dict:
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.system_token}',
+                'Content-Type': 'application/json'
+            }
+
+            url = f"{self.api_base_url}/villager/{villager_id}"
+
+            response = self.session.put(
+                url,
+                json={"popularity_rank": popularity_rank},
+                headers=headers
+            )
+
+            if response.status_code not in [200, 201]:
+                raise Exception(f"Failed to update popularity rank: {response.text}")
+
+            print(f"✓ Popularity rank updated successfully")
+            return response.json()
+
+        except Exception as e:
+            print(f"✗ Failed to update popularity rank: {str(e)}")
+            raise
+
     def get_fishes_from_api(self) -> List[Dict]:
         headers = {
             'Authorization': f'Bearer {self.system_token}',

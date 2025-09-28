@@ -145,20 +145,6 @@ const updateProfile = async (userId, updateData) => {
             updates.email = email.toLowerCase().trim();
         }
         
-        if (username !== undefined) {
-            const cleanUsername = username.toLowerCase().trim();
-            
-            if (!cleanUsername.match(/^[a-z0-9_]+$/)) {
-                throw new Error('Username can only contain lowercase letters, numbers, and underscores');
-            }
-            
-            if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-                throw new Error('Username must be between 3 and 30 characters');
-            }
-            
-            updates.username = cleanUsername;
-         
-        }
         
         
         Object.assign(user, updates);

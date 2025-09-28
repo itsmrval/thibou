@@ -98,9 +98,6 @@ router.put('/:id',
             if (error.message === 'Email already in use') {
                 return res.status(400).json({ message: error.message, field: 'email' });
             }
-            if (error.message === 'Username already taken') {
-                return res.status(400).json({ message: error.message, field: 'username' });
-            }
             if (error.message.includes('must be at least') || 
                 error.message.includes('can only contain') ||
                 error.message.includes('must be between')) {

@@ -20,6 +20,7 @@ class GlobalPopulateApp:
         self.available_types = {
             'villagers': 'villagers',
             'fishes': 'fishes',
+            'bugs': 'bugs',
         }
 
     def get_help(self) -> str:
@@ -29,6 +30,7 @@ class GlobalPopulateApp:
             Types:
             villagers                    - Populate villagers and enhance with house and name data
             fishes                       - Populate fishes from Nookipedia API
+            bugs                         - Populate bugs from Nookipedia API
 
             Options for villagers:
             --avoid-enhancements        - Skip house enhancements (only populate base data)
@@ -36,6 +38,9 @@ class GlobalPopulateApp:
             --avoid-rank-enhancements   - Skip popularity rank enhancements
 
             Options for fishes:
+            --avoid-translations        - Skip name translations (only populate base data)
+
+            Options for bugs:
             --avoid-translations        - Skip name translations (only populate base data)
         """
         return help_text.strip()
@@ -102,6 +107,12 @@ class GlobalPopulateApp:
             elif data_type == 'fishes':
                 from fishes import FishPopulator
                 populator = FishPopulator(
+                    avoid_translations=parsed_args.avoid_translations
+                )
+                populator.run()
+            elif data_type == 'bugs':
+                from bugs import BugPopulator
+                populator = BugPopulator(
                     avoid_translations=parsed_args.avoid_translations
                 )
                 populator.run()

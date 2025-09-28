@@ -260,6 +260,49 @@ class BasePopulator(ABC):
             print(f"✗ Failed to update fish names: {str(e)}")
             raise
 
+    def get_bugs_from_api(self) -> List[Dict]:
+        headers = {
+            'Authorization': f'Bearer {self.system_token}',
+            'Content-Type': 'application/json'
+        }
+
+        response = self.session.get(
+            f"{self.api_base_url}/bug",
+            headers=headers
+        )
+
+        if response.status_code not in [200, 201]:
+            raise Exception(f"Failed to get bugs from API: {response.text}")
+
+        data = response.json()
+        return data.get('bugs', [])
+
+    def update_bug_names(self, bug_id: str, names_data: Dict) -> Dict:
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.system_token}',
+                'Content-Type': 'application/json'
+            }
+
+            url = f"{self.api_base_url}/bug/{bug_id}"
+
+            response = self.session.put(
+                url,
+                json={"name": names_data},
+                headers=headers
+            )
+
+            if response.status_code not in [200, 201]:
+                raise Exception(f"Failed to update bug names: {response.text}")
+
+            print(f"✓ Bug names updated successfully")
+            return response.json()
+
+        except Exception as e:
+            print(f"✗ Failed to update bug names: {str(e)}")
+            raise
+
+
 
 class BaseWebPopulator(BasePopulator):
     """Base class for web scraping populators"""

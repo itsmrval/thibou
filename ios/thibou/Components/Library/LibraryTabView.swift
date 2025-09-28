@@ -38,6 +38,7 @@ struct LibraryTabView: View {
     @StateObject private var languageManager = LanguageManager.shared
     @State private var favoriteVillagers: Set<String> = []
     @State private var favoriteFishes: Set<String> = []
+    @State private var favoriteBugs: Set<String> = []
 
     private var categories: [LibraryCategory] { LibraryCategory.allCases }
 
@@ -91,6 +92,21 @@ struct LibraryTabView: View {
                 shareFish(fish)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ToggleFavoriteBug"))) { notification in
+            if let bug = notification.object as? Bug {
+                if favoriteBugs.contains(bug.id) {
+                    favoriteBugs.remove(bug.id)
+                } else {
+                    favoriteBugs.insert(bug.id)
+                }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShareBug"))) { notification in
+            if let bug = notification.object as? Bug {
+                shareBug(bug)
+            }
+        }
     }
 
     private func shareVillager(_ villager: Villager) {
@@ -130,6 +146,25 @@ struct LibraryTabView: View {
 
         window.rootViewController?.present(activityController, animated: true)
     }
+
+    private func shareBug(_ bug: Bug) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else { return }
+
+        let shareText = LocalizedKey.sharingTextTodo.localized
+        let activityController = UIActivityViewController(
+            activityItems: [shareText],
+            applicationActivities: nil
+        )
+
+        if let popover = activityController.popoverPresentationController {
+            popover.sourceView = window
+            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        window.rootViewController?.present(activityController, animated: true)
+    }
 }
 struct LibraryContentView: View {
     let category: LibraryCategory
@@ -141,7 +176,7 @@ struct LibraryContentView: View {
         case .poissons:
             FishContentView()
         case .insectes:
-            ComingSoonView(category: .insectes)
+            BugContentView()
         case .fossiles:
             ComingSoonView(category: .fossiles)
         case .vetements:
@@ -825,6 +860,326 @@ struct LibraryFishCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(
                     color: fish.titleColorValue.opacity(0.2),
+                    radius: 8,
+                    x: 0,
+                    y: 4
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+        )
+        .onTapGesture {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
+}
+
+struct BugContentView: View {
+    @StateObject private var bugService = BugService.shared
+    @State private var expandedLocations: Set<String> = []
+    @State private var currentVisibleLocation: String? = nil
+    @State private var scrollAction: ((String) -> Void)?
+
+    private var groupedBugs: [(String, [BugSummary])] {
+        let grouped = Dictionary(grouping: bugService.bugSummaries) { $0.location }
+        let sortedKeys = grouped.keys.sorted { location1, location2 in
+            location1.lowercased() < location2.lowercased()
+        }
+        return sortedKeys.map { location in
+            let bugsInLocation = grouped[location] ?? []
+            let sortedBugs = bugsInLocation.sorted { bug1, bug2 in
+                let rarityOrder = ["common": 0, "uncommon": 1, "rare": 2]
+                let rarity1 = rarityOrder[bug1.rarity.lowercased()] ?? 3
+                let rarity2 = rarityOrder[bug2.rarity.lowercased()] ?? 3
+                if rarity1 != rarity2 {
+                    return rarity1 < rarity2
+                }
+                return bug1.displayName.lowercased() < bug2.displayName.lowercased()
+            }
+            return (location: location, bugs: sortedBugs)
+        }
+    }
+
+    private var availableLocations: [String] {
+        return groupedBugs.map { $0.0 }.sorted { $0.lowercased() < $1.lowercased() }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Text(LocalizedKey.bugs)
+                    .font(ThibouTheme.Typography.body)
+                    .foregroundColor(.secondary)
+
+                Text("(\(bugService.bugSummaries.count))")
+                    .font(ThibouTheme.Typography.body)
+                    .foregroundColor(.secondary.opacity(0.7))
+
+                Spacer()
+
+                Menu {
+                        ForEach(availableLocations, id: \.self) { location in
+                            Button(action: {
+                                scrollAction?(location)
+                            }) {
+                                HStack {
+                                    Text(LocalizedKey.bugLocation(location))
+
+                                    if currentVisibleLocation == location {
+                                        Spacer()
+                                        Image(systemName: "eye.fill")
+                                            .foregroundColor(.blue)
+                                            .font(.system(size: 12))
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(currentVisibleLocation.map { LocalizedKey.bugLocation($0) } ?? LocalizedKey.navigation.localized)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.primary)
+
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                    }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        if bugService.bugSummaries.isEmpty {
+                            VStack(spacing: 16) {
+                                if bugService.isLoading && bugService.bugSummaries.isEmpty {
+                                    ProgressView(LocalizedKey.loading.localized)
+                                        .foregroundColor(.secondary)
+                                } else if let error = bugService.error {
+                                    VStack(spacing: 16) {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .font(.largeTitle)
+                                            .foregroundColor(.orange)
+
+                                        Text(LocalizedKey.errorOccurred)
+                                            .font(ThibouTheme.Typography.body)
+                                            .foregroundColor(.primary)
+
+                                        Text(error)
+                                            .font(.system(.caption, design: .monospaced))
+                                            .foregroundColor(.secondary)
+                                            .padding(12)
+                                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
+
+                                        Button(LocalizedKey.retry.localized) {
+                                            Task { await bugService.fetchBugSummaries() }
+                                        }
+                                        .foregroundColor(.blue)
+                                    }
+                                } else {
+                                    Image("bug")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 80, height: 80)
+                                        .foregroundColor(.secondary.opacity(0.6))
+
+                                    Text(LocalizedKey.noBugsFound.localized)
+                                        .font(ThibouTheme.Typography.body)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 100)
+                        } else {
+                                    ForEach(groupedBugs, id: \.0) { location, bugs in
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                                if expandedLocations.contains(location) {
+                                                    expandedLocations.remove(location)
+                                                } else {
+                                                    expandedLocations.insert(location)
+                                                }
+                                            }
+                                        }) {
+                                            HStack {
+                                                Text(LocalizedKey.bugLocation(location))
+                                                    .font(ThibouTheme.Typography.subheadline)
+                                                    .foregroundColor(.primary)
+
+                                                Text("(\(bugs.count))")
+                                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                                    .foregroundColor(.secondary)
+
+                                                Spacer()
+
+                                                Image(systemName: expandedLocations.contains(location) ? "chevron.up" : "chevron.down")
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 12)
+                                            .background(
+                                                GeometryReader { geometry in
+                                                    Color.clear
+                                                        .onAppear {
+                                                            updateVisibleLocation(for: location, geometry: geometry)
+                                                        }
+                                                        .onChange(of: geometry.frame(in: .global)) { _, _ in
+                                                            updateVisibleLocation(for: location, geometry: geometry)
+                                                        }
+                                                }
+                                            )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+
+                                        if expandedLocations.contains(location) {
+                                            LazyVGrid(columns: [
+                                                GridItem(.flexible()),
+                                                GridItem(.flexible())
+                                            ], spacing: 6) {
+                                                ForEach(bugs) { bug in
+                                                    LibraryBugCard(bug: bug)
+                                                }
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.bottom, 12)
+                                        }
+                                    }
+                                    .id(location)
+                                }
+                                .padding(.vertical, 16)
+                        }
+                    }
+                }
+                .refreshable {
+                    await refreshBugSummaries()
+                }
+                .onAppear {
+                    scrollAction = { location in
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            proxy.scrollTo(location, anchor: .top)
+                        }
+                    }
+                }
+            }
+        }
+        .task {
+            if bugService.bugSummaries.isEmpty {
+                await bugService.fetchBugSummaries()
+            }
+        }
+        .onAppear {
+            if !groupedBugs.isEmpty {
+                expandedLocations = Set(groupedBugs.map(\.0))
+            }
+        }
+        .onChange(of: groupedBugs.map(\.0)) { _, currentLocations in
+            if !currentLocations.isEmpty {
+                expandedLocations = Set(currentLocations)
+            }
+        }
+    }
+
+    private func refreshBugSummaries() async {
+        bugService.clearAllCaches()
+        await bugService.fetchBugSummaries()
+    }
+
+    private func updateVisibleLocation(for location: String, geometry: GeometryProxy) {
+        let frame = geometry.frame(in: .global)
+        let screenHeight = UIScreen.main.bounds.height
+        let visibleRange = 100...screenHeight * 0.4
+
+        if visibleRange.contains(frame.midY) {
+            DispatchQueue.main.async {
+                if currentVisibleLocation != location {
+                    currentVisibleLocation = location
+                }
+            }
+        }
+    }
+}
+
+struct LibraryBugCard: View {
+    let bug: BugSummary
+    @StateObject private var languageManager = LanguageManager.shared
+
+    var body: some View {
+        NavigationLink(destination: BugDetailView(
+            bug: bug.toBug(),
+            allBugs: BugService.shared.bugSummaries.map { $0.toBug() },
+            onToggleFavorite: { bug in
+                NotificationCenter.default.post(
+                    name: Notification.Name("ToggleFavoriteBug"),
+                    object: bug
+                )
+            },
+            onShare: { bug in
+                NotificationCenter.default.post(
+                    name: Notification.Name("ShareBug"),
+                    object: bug
+                )
+            }
+        )) {
+            HStack(spacing: 16) {
+                BugImageView(
+                    bugId: bug.id,
+                    imageType: "full",
+                    width: 60,
+                    height: 60,
+                    cornerRadius: 12,
+                    placeholderColor: bug.titleColorValue
+                )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(bug.nameForLanguage(languageManager.selectedLanguage.rawValue))
+                        .font(ThibouTheme.Typography.boldCallout)
+                        .foregroundColor(bug.titleColorValue)
+                        .lineLimit(1)
+
+                    Text(LocalizedKey.bugLocation(bug.displayLocation))
+                        .font(ThibouTheme.Typography.caption)
+                        .foregroundColor(ThibouTheme.Colors.leafGreen.opacity(0.8))
+                        .lineLimit(1)
+
+                    Text("\(bug.shopPrice) Bells")
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+
+                    Text(LocalizedKey.bugRarity(bug.displayRarity))
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
+                        .foregroundColor(.secondary.opacity(0.8))
+                        .lineLimit(1)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(
+                    color: bug.titleColorValue.opacity(0.2),
                     radius: 8,
                     x: 0,
                     y: 4

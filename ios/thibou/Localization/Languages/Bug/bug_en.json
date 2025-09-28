@@ -1,0 +1,50 @@
+{
+  "location": "Location",
+  "rarity": "Rarity",
+  "weather": "Weather",
+  "shop_price": "Shop Price",
+  "flick_price": "Flick Price",
+  "availability": "Availability",
+  "northern_hemisphere": "Northern",
+  "southern_hemisphere": "Southern",
+  "not_available": "-",
+  "months": {
+    "january": "January",
+    "february": "February",
+    "march": "March",
+    "april": "April",
+    "may": "May",
+    "june": "June",
+    "july": "July",
+    "august": "August",
+    "september": "September",
+    "october": "October",
+    "november": "November",
+    "december": "December"
+  },
+  "bug_location_descriptions": {
+    "flying": "Found flying around your island",
+    "trees": "Found on trees around your island",
+    "ground": "Found on the ground around your island",
+    "flowers": "Found on flowers around your island",
+    "water": "Found in water bodies on your island",
+    "rocks": "Found on rocks around your island",
+    "stumps": "Found on tree stumps around your island",
+    "villagers": "Found on villagers on your island",
+    "special": "Found in special locations on your island"
+  },
+  "basic_information": "Basic Information",
+  "translations": "Translations",
+  "languages": {
+    "english": "English",
+    "french": "French",
+    "spanish": "Spanish",
+    "german": "German",
+    "italian": "Italian",
+    "japanese": "Japanese",
+    "korean": "Korean",
+    "chinese": "Chinese",
+    "dutch": "Dutch",
+    "russian": "Russian"
+  }
+}

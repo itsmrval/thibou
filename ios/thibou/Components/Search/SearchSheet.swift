@@ -7,18 +7,23 @@ struct SearchSheet: View {
 
     @StateObject private var villagerService = VillagerService.shared
     @StateObject private var fishService = FishService.shared
+    @StateObject private var bugService = BugService.shared
     @State private var searchResults: SearchResults = SearchResults()
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
 
     @State private var suggestedVillagers: [VillagerSummary] = []
     @State private var suggestedFish: [FishSummary] = []
+    @State private var suggestedBugs: [BugSummary] = []
 
     @State private var selectedVillager: VillagerSummary?
     @State private var showVillagerDetail = false
 
     @State private var selectedFish: FishSummary?
     @State private var showFishDetail = false
+
+    @State private var selectedBug: BugSummary?
+    @State private var showBugDetail = false
 
     var body: some View {
         NavigationStack {
@@ -32,6 +37,7 @@ struct SearchSheet: View {
                         SuggestionsView(
                             suggestedVillagers: suggestedVillagers,
                             suggestedFish: suggestedFish,
+                            suggestedBugs: suggestedBugs,
                             onVillagerTap: { villager in
                                 selectedVillager = villager
                                 showVillagerDetail = true
@@ -39,6 +45,10 @@ struct SearchSheet: View {
                             onFishTap: { fish in
                                 selectedFish = fish
                                 showFishDetail = true
+                            },
+                            onBugTap: { bug in
+                                selectedBug = bug
+                                showBugDetail = true
                             }
                         )
                         .padding(.top, 20)
@@ -53,6 +63,10 @@ struct SearchSheet: View {
                             onFishTap: { fish in
                                 selectedFish = fish
                                 showFishDetail = true
+                            },
+                            onBugTap: { bug in
+                                selectedBug = bug
+                                showBugDetail = true
                             }
                         )
                         .padding(.top, 20)
@@ -204,9 +218,14 @@ struct SearchSheet: View {
                 await fishService.fetchFishSummaries()
             }
 
+            if bugService.bugSummaries.isEmpty {
+                await bugService.fetchBugSummaries()
+            }
+
             await MainActor.run {
                 suggestedVillagers = Array(villagerService.villagerSummaries.shuffled().prefix(3))
-                suggestedFish = Array(fishService.fishSummaries.shuffled().prefix(4))
+                suggestedFish = Array(fishService.fishSummaries.shuffled().prefix(2))
+                suggestedBugs = Array(bugService.bugSummaries.shuffled().prefix(2))
             }
         }
     }
@@ -237,11 +256,18 @@ struct SearchSheet: View {
                 fish.rarity.localizedCaseInsensitiveContains(query)
             }
 
+            let bugResults = bugService.bugSummaries.filter { bug in
+                bug.nameForLanguage(currentLanguage).localizedCaseInsensitiveContains(query) ||
+                bug.location.localizedCaseInsensitiveContains(query) ||
+                bug.rarity.localizedCaseInsensitiveContains(query)
+            }
+
             await MainActor.run {
                 if !Task.isCancelled {
                     searchResults = SearchResults(
                         villagers: Array(villagerResults.prefix(4)),
-                        fish: Array(fishResults.prefix(4))
+                        fish: Array(fishResults.prefix(3)),
+                        bugs: Array(bugResults.prefix(3))
                     )
                     isSearching = false
                 }
@@ -253,17 +279,20 @@ struct SearchSheet: View {
 struct SearchResults {
     var villagers: [VillagerSummary] = []
     var fish: [FishSummary] = []
+    var bugs: [BugSummary] = []
 
     var isEmpty: Bool {
-        villagers.isEmpty && fish.isEmpty
+        villagers.isEmpty && fish.isEmpty && bugs.isEmpty
     }
 }
 
 struct SuggestionsView: View {
     let suggestedVillagers: [VillagerSummary]
     let suggestedFish: [FishSummary]
+    let suggestedBugs: [BugSummary]
     let onVillagerTap: (VillagerSummary) -> Void
     let onFishTap: (FishSummary) -> Void
+    let onBugTap: (BugSummary) -> Void
 
     @StateObject private var languageManager = LanguageManager.shared
 
@@ -291,13 +320,27 @@ struct SuggestionsView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 8),
-                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ], spacing: 12) {
+                            ForEach(Array(suggestedFish.prefix(2))) { fish in
+                                FishSuggestionCard(fish: fish) {
+                                    onFishTap(fish)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+
+                if !suggestedBugs.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 8),
                             GridItem(.flexible(), spacing: 8)
                         ], spacing: 12) {
-                            ForEach(Array(suggestedFish.prefix(4))) { fish in
-                                FishSuggestionCard(fish: fish) {
-                                    onFishTap(fish)
+                            ForEach(Array(suggestedBugs.prefix(2))) { bug in
+                                BugSuggestionCard(bug: bug) {
+                                    onBugTap(bug)
                                 }
                             }
                         }
@@ -318,6 +361,7 @@ struct SearchResultsView: View {
     let isSearching: Bool
     let onVillagerTap: (VillagerSummary) -> Void
     let onFishTap: (FishSummary) -> Void
+    let onBugTap: (BugSummary) -> Void
 
     @StateObject private var languageManager = LanguageManager.shared
 
@@ -372,6 +416,24 @@ struct SearchResultsView: View {
                                 ForEach(searchResults.fish) { fish in
                                     FishSearchCard(fish: fish) {
                                         onFishTap(fish)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+
+                    if !searchResults.bugs.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(LocalizedKey.bugs.localized)
+                                .font(ThibouTheme.Typography.title)
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+
+                            LazyVStack(spacing: 12) {
+                                ForEach(searchResults.bugs) { bug in
+                                    BugSearchCard(bug: bug) {
+                                        onBugTap(bug)
                                     }
                                 }
                             }

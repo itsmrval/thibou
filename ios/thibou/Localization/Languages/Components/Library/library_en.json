@@ -25,5 +25,26 @@
     "common": "Common",
     "uncommon": "Uncommon",
     "rare": "Rare"
+  },
+  "bug_locations": {
+    "flying": "Flying",
+    "trees": "Trees",
+    "ground": "Ground",
+    "flowers": "Flowers",
+    "water": "Water",
+    "rocks": "Rocks",
+    "stumps": "Stumps",
+    "villagers": "Villagers",
+    "special": "Special"
+  },
+  "bug_rarities": {
+    "very_common": "Very Common",
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare"
+  },
+  "bug_weather": {
+    "any": "Any",
+    "rain": "Rain"
   }
 }

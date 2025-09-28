@@ -34,7 +34,8 @@ class LocalizationManager: ObservableObject {
             ("Components/Tools", "tools"),
             ("Components/Island", "island"),
             ("Villager", "villager"),
-            ("Fish", "fish")
+            ("Fish", "fish"),
+            ("Bug", "bug")
         ]
         let languages = ["en", "fr"]
 

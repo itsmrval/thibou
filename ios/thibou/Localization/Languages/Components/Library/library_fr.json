@@ -25,5 +25,26 @@
     "common": "Commun",
     "uncommon": "Peu commun",
     "rare": "Rare"
+  },
+  "bug_locations": {
+    "flying": "En vol",
+    "trees": "Arbres",
+    "ground": "Sol",
+    "flowers": "Fleurs",
+    "water": "Eau",
+    "rocks": "Rochers",
+    "stumps": "Souches",
+    "villagers": "Villageois",
+    "special": "Spécial"
+  },
+  "bug_rarities": {
+    "very_common": "Très commun",
+    "common": "Commun",
+    "uncommon": "Peu commun",
+    "rare": "Rare"
+  },
+  "bug_weather": {
+    "any": "Tout temps",
+    "rain": "Pluie"
   }
 }

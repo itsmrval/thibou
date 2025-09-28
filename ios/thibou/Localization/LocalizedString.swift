@@ -154,6 +154,10 @@ enum LocalizedKey: String, CaseIterable {
     case december = "Fish.months.december"
     case fishBasicInformation = "Fish.basic_information"
     case fishTranslations = "Fish.translations"
+    case weather = "Bug.weather"
+    case flickPrice = "Bug.flick_price"
+    case bugBasicInformation = "Bug.basic_information"
+    case bugTranslations = "Bug.translations"
 
     static func speciesName(_ species: String) -> String {
         return LocalizationManager.shared.localizedString(for: "species_names.\(species)", component: "Villager", fallback: species.capitalized)
@@ -189,6 +193,26 @@ enum LocalizedKey: String, CaseIterable {
 
     static func fishLanguageName(_ languageKey: String) -> String {
         return LocalizationManager.shared.localizedString(for: "languages.\(languageKey)", component: "Fish", fallback: languageKey.capitalized)
+    }
+
+    static func bugLocation(_ location: String) -> String {
+        return LocalizationManager.shared.localizedString(for: "bug_locations.\(location)", component: "Components/Library", fallback: location.capitalized)
+    }
+
+    static func bugWeather(_ weather: String) -> String {
+        return LocalizationManager.shared.localizedString(for: "bug_weather.\(weather)", component: "Components/Library", fallback: weather.capitalized)
+    }
+
+    static func bugRarity(_ rarity: String) -> String {
+        return LocalizationManager.shared.localizedString(for: "bug_rarities.\(rarity)", component: "Components/Library", fallback: rarity.capitalized)
+    }
+
+    static func bugLocationDescription(_ location: String) -> String {
+        return LocalizationManager.shared.localizedString(for: "bug_location_descriptions.\(location)", component: "Bug", fallback: "Available in \(location)")
+    }
+
+    static func bugLanguageName(_ languageKey: String) -> String {
+        return LocalizationManager.shared.localizedString(for: "languages.\(languageKey)", component: "Bug", fallback: languageKey.capitalized)
     }
 
     var localized: String {

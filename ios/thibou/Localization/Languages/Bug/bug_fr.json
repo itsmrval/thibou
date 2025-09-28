@@ -1,0 +1,50 @@
+{
+  "location": "Lieu",
+  "rarity": "Rareté",
+  "weather": "Météo",
+  "shop_price": "Prix à la boutique",
+  "flick_price": "Prix avec Djason",
+  "availability": "Disponibilité",
+  "northern_hemisphere": "Nord",
+  "southern_hemisphere": "Sud",
+  "not_available": "-",
+  "months": {
+    "january": "Janvier",
+    "february": "Février",
+    "march": "Mars",
+    "april": "Avril",
+    "may": "Mai",
+    "june": "Juin",
+    "july": "Juillet",
+    "august": "Août",
+    "september": "Septembre",
+    "october": "Octobre",
+    "november": "Novembre",
+    "december": "Décembre"
+  },
+  "bug_location_descriptions": {
+    "flying": "Trouvé en vol autour de votre île",
+    "trees": "Trouvé sur les arbres de votre île",
+    "ground": "Trouvé au sol autour de votre île",
+    "flowers": "Trouvé sur les fleurs de votre île",
+    "water": "Trouvé dans les points d'eau de votre île",
+    "rocks": "Trouvé sur les rochers de votre île",
+    "stumps": "Trouvé sur les souches d'arbres de votre île",
+    "villagers": "Trouvé sur les villageois de votre île",
+    "special": "Trouvé dans des lieux spéciaux de votre île"
+  },
+  "basic_information": "Informations de base",
+  "translations": "Traductions",
+  "languages": {
+    "english": "Anglais",
+    "french": "Français",
+    "spanish": "Espagnol",
+    "german": "Allemand",
+    "italian": "Italien",
+    "japanese": "Japonais",
+    "korean": "Coréen",
+    "chinese": "Chinois",
+    "dutch": "Néerlandais",
+    "russian": "Russe"
+  }
+}

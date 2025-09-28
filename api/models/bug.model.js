@@ -75,7 +75,7 @@ const BugSchema = new mongoose.Schema({
     rarity: {
         type: String,
         required: true,
-        enum: ['common', 'uncommon', 'rare'],
+        enum: ['very_common', 'common', 'uncommon', 'rare'],
         trim: true,
         default: 'common'
     },

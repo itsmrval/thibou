@@ -90,7 +90,7 @@ class BugPopulator(BasePopulator):
         """Normalize rarity, defaulting to common if empty"""
         if not rarity or rarity.strip() == "":
             return "common"
-        return rarity.lower()
+        return rarity.lower().replace(" ", "_")
 
     def parse_time_range(self, time_str: str) -> Dict:
         """Parse time ranges like '8 AM – 5 PM' into begin/end hours"""

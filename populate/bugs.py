@@ -94,8 +94,8 @@ class BugPopulator(BasePopulator):
 
     def parse_time_range(self, time_str: str) -> Dict:
         """Parse time ranges like '8 AM – 5 PM' into begin/end hours"""
-        if not time_str or time_str.lower() == "all day":
-            return {"begin": 0, "end": 23}
+        if not time_str or time_str.lower() == "all day" or time_str == "NA":
+            return None
 
         dash_chars = ["–", "—", "-", "—"]
         time_parts = None
@@ -106,7 +106,7 @@ class BugPopulator(BasePopulator):
                 break
 
         if not time_parts or len(time_parts) != 2:
-            return {"begin": 0, "end": 23}
+            return None
 
         def parse_time(time_part):
             time_part = time_part.strip()
@@ -126,8 +126,36 @@ class BugPopulator(BasePopulator):
 
         return {"begin": begin_time, "end": end_time}
 
+    def transform_availability(self, north_data: Dict, south_data: Dict) -> Dict:
+        """Transform availability data to match fish format"""
+        availability = {
+            "north": {},
+            "south": {}
+        }
+
+        if north_data and "times_by_month" in north_data:
+            for month, time_str in north_data["times_by_month"].items():
+                if time_str and time_str != "NA":
+                    time_range = self.parse_time_range(time_str)
+                    if time_range:
+                        availability["north"][month] = time_range
+
+        if south_data and "times_by_month" in south_data:
+            for month, time_str in south_data["times_by_month"].items():
+                if time_str and time_str != "NA":
+                    time_range = self.parse_time_range(time_str)
+                    if time_range:
+                        availability["south"][month] = time_range
+
+        return availability
+
     def transform_bug_data(self, nookipedia_bug: Dict) -> Dict:
         """Transform Nookipedia bug data to our API format"""
+
+        availability = self.transform_availability(
+            nookipedia_bug.get("north", {}),
+            nookipedia_bug.get("south", {})
+        )
 
         transformed_bug = {
             "name": {
@@ -149,10 +177,7 @@ class BugPopulator(BasePopulator):
                 "flick": nookipedia_bug.get('sell_flick', 0)
             },
             "rarity": self.normalize_rarity(nookipedia_bug.get('rarity', '')),
-            "availability": {
-                "north": nookipedia_bug.get('north', {}),
-                "south": nookipedia_bug.get('south', {})
-            }
+            "availability": availability
         }
 
         return transformed_bug

@@ -9,6 +9,11 @@ const {
     updateBug,
     deleteBug,
 } = require('../controllers/bug.controller');
+const {
+    getBugImage,
+    uploadBugImage,
+    deleteBugImage,
+} = require('../controllers/bugImage.controller');
 const { log } = require('../utils/logger.util');
 
 router.get('/', async (req, res) => {
@@ -137,6 +142,103 @@ router.delete('/:id',
             log(`Error deleting bug: ${error.message}`, 'error');
 
             if (error.message === 'Bug not found') {
+                return res.status(404).json({ message: error.message });
+            }
+
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+);
+
+router.get('/:id/img/:type', async (req, res) => {
+    try {
+        const { id, type } = req.params;
+
+        if (!['full', 'small'].includes(type)) {
+            return res.status(400).json({
+                message: 'Type must be one of: full, small'
+            });
+        }
+
+        const image = await getBugImage(id, type);
+
+        res.status(200).json({
+            message: 'Bug image retrieved successfully',
+            image
+        });
+    } catch (error) {
+        log(`Error retrieving bug image: ${error.message}`, 'error');
+
+        if (error.message === 'Bug not found' || error.message === 'Image not found') {
+            return res.status(404).json({ message: error.message });
+        }
+
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.post('/:id/img/:type',
+    authMiddleware(['bug:write']),
+    [
+        check('image_data')
+            .notEmpty()
+            .withMessage('Image data is required')
+            .matches(/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/)
+            .withMessage('Image must be a valid Base64 PNG format')
+    ],
+    async (req, res) => {
+        const bodyError = validationResult(req);
+        if (!bodyError.isEmpty()) {
+            return res.status(400).json({ errors: bodyError.array() });
+        }
+
+        try {
+            const { id, type } = req.params;
+            const { image_data } = req.body;
+
+            if (!['full', 'small'].includes(type)) {
+                return res.status(400).json({
+                    message: 'Type must be one of: full, small'
+                });
+            }
+
+            const image = await uploadBugImage(id, type, image_data);
+
+            res.status(200).json({
+                message: 'Bug image uploaded successfully',
+                image
+            });
+        } catch (error) {
+            log(`Error uploading bug image: ${error.message}`, 'error');
+
+            if (error.message === 'Bug not found') {
+                return res.status(404).json({ message: error.message });
+            }
+
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+);
+
+router.delete('/:id/img/:type',
+    authMiddleware(['bug:admin']),
+    async (req, res) => {
+        try {
+            const { id, type } = req.params;
+
+            if (!['full', 'small'].includes(type)) {
+                return res.status(400).json({
+                    message: 'Type must be one of: full, small'
+                });
+            }
+
+            const result = await deleteBugImage(id, type);
+
+            res.status(200).json(result);
+        } catch (error) {
+            log(`Error deleting bug image: ${error.message}`, 'error');
+
+            if (error.message === 'Bug not found' || error.message === 'Image not found') {
                 return res.status(404).json({ message: error.message });
             }
 

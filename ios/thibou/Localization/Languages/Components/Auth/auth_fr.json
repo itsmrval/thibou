@@ -22,8 +22,8 @@
   "current_password": "Mot de passe actuel",
   "confirm_password": "Confirmer le mot de passe",
   "account_connected": "Compte connecté",
-  "already_have_account": "Vous avez déjà un compte ? Se Connecter",
-  "dont_have_account": "Vous n'avez pas de compte ? En Créer un",
+  "already_have_account": "Vous avez déjà un compte ?",
+  "dont_have_account": "Vous n'avez pas de compte ?",
   "waiting_for_apple": "En attente d'Apple...",
   "link_apple_description": "Liez votre identifiant Apple à votre compte pour une connexion plus facile.",
   "unlink_apple_description": "Cela supprimera la connexion Apple de votre compte. Assurez-vous d'avoir un autre moyen de vous connecter.",
@@ -32,5 +32,14 @@
   "current_password_placeholder": "Mot de passe actuel",
   "new_password_placeholder": "Nouveau mot de passe",
   "confirm_new_password": "Confirmer le nouveau mot de passe",
-  "new_email_placeholder": "Nouvelle adresse e-mail"
+  "new_email_placeholder": "Nouvelle adresse e-mail",
+  "confirm_your_identity": "Confirmez votre identité",
+  "confirm_your_identity_description": "Afin de s'assurer qu'il s'agisse bien de vous, merci de vous connecter.",
+  "sign_in_with_password": "Se connecter avec mot de passe",
+  "apple_account_linked_successfully": "Compte Apple lié avec succès",
+  "apple_account_unlinked_successfully": "Compte Apple délié avec succès",
+  "define_password": "Définir un mot de passe",
+  "update_my_password": "Mettre à jour mon mot de passe",
+  "password_defined_successfully": "Mot de passe défini avec succès",
+  "password_updated_successfully": "Mot de passe mis à jour avec succès"
 }

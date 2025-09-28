@@ -114,6 +114,8 @@ enum AuthError: Error, LocalizedError {
     }
 }
 
+struct RecentAuthRequiredError: Error {}
+
 final class AuthManager: ObservableObject {
     static let shared = AuthManager()
     @Published var isLoggedIn = false
@@ -337,6 +339,13 @@ final class AuthManager: ObservableObject {
 
         if httpResponse.statusCode == 200 {
             try await refreshUserData()
+        } else if httpResponse.statusCode == 403 {
+            let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            if let requiresRecentAuth = errorData?["requiresRecentAuth"] as? Bool, requiresRecentAuth {
+                throw RecentAuthRequiredError()
+            }
+            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to link Apple account")
+            throw AuthError.serverError(errorMessage)
         } else {
             let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to link Apple account")
             throw AuthError.serverError(errorMessage)
@@ -356,18 +365,25 @@ final class AuthManager: ObservableObject {
 
         if httpResponse.statusCode == 200 {
             try await refreshUserData()
+        } else if httpResponse.statusCode == 403 {
+            let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            if let requiresRecentAuth = errorData?["requiresRecentAuth"] as? Bool, requiresRecentAuth {
+                throw RecentAuthRequiredError()
+            }
+            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to unlink Apple account")
+            throw AuthError.serverError(errorMessage)
         } else {
             let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to unlink Apple account")
             throw AuthError.serverError(errorMessage)
         }
     }
 
-    func changePassword(currentPassword: String, newPassword: String) async throws {
+    func setPassword(_ newPassword: String) async throws {
         guard let token = authToken, let userId = currentUser?.id else {
             throw AuthError.noToken
         }
 
-        let requestBody = ["currentPassword": currentPassword, "newPassword": newPassword]
+        let requestBody = ["newPassword": newPassword]
         let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
 
         let (data, httpResponse) = try await apiManager.makeRequestWithoutDecoding(
@@ -377,8 +393,17 @@ final class AuthManager: ObservableObject {
             requiresAuth: true
         )
 
-        if httpResponse.statusCode != 200 {
-            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to change password")
+        if httpResponse.statusCode == 200 {
+            try await refreshUserData()
+        } else if httpResponse.statusCode == 403 {
+            let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            if let requiresRecentAuth = errorData?["requiresRecentAuth"] as? Bool, requiresRecentAuth {
+                throw RecentAuthRequiredError()
+            }
+            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to set password")
+            throw AuthError.serverError(errorMessage)
+        } else {
+            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to set password")
             throw AuthError.serverError(errorMessage)
         }
     }
@@ -414,6 +439,48 @@ final class AuthManager: ObservableObject {
 
         let user = try await validateToken(token)
         self.currentUser = user
+    }
+
+    func reAuthenticateWithPassword(_ password: String) async throws {
+        guard let currentUser = currentUser, let email = currentUser.email else {
+            throw AuthError.invalidCredentials
+        }
+
+        let requestBody = ["email": email, "password": password]
+        let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
+
+        do {
+            let authResponse: AuthResponse = try await apiManager.makeRequest(
+                endpoint: "/auth/login",
+                method: .POST,
+                body: bodyData,
+                responseType: AuthResponse.self
+            )
+            await handleSuccessfulAuth(authResponse)
+        } catch let error as APIError {
+            switch error {
+            case .serverError(let message):
+                throw AuthError.serverError(message)
+            default:
+                throw AuthError.networkError
+            }
+        }
+    }
+
+    func reAuthenticateWithApple() async throws {
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = []
+
+        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        let delegate = AppleSignInDelegate()
+        authorizationController.delegate = delegate
+        authorizationController.presentationContextProvider = delegate
+
+        authorizationController.performRequests()
+
+        let result = try await delegate.result
+        try await processAppleSignInResult(result)
     }
 }
 

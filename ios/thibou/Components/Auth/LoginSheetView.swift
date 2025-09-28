@@ -12,10 +12,18 @@ struct SettingsView: View {
     @State private var showChangePassword = false
     @State private var showChangeEmail = false
     @State private var showChangeUsername = false
-    @State private var showAppleSSO = false
+    @State private var showRecentAuthSheet = false
+    @State private var pendingAction: PendingAction?
     @State private var isAppleSignInLoading = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+
+    enum PendingAction {
+        case linkApple
+        case unlinkApple
+        case setPassword(String)
+        case definePassword
+    }
     @StateObject private var languageManager = LanguageManager.shared
     @Namespace private var settingsGlassNamespace
 
@@ -26,7 +34,7 @@ struct SettingsView: View {
                     ThibouTheme.Colors.backgroundGradient
                         .ignoresSafeArea()
 
-                    if !showEmailLogin && !showLanguageSelector && !showAccountSection && !showChangePassword && !showChangeEmail && !showChangeUsername && !showAppleSSO {
+                    if !showEmailLogin && !showLanguageSelector && !showAccountSection && !showChangePassword && !showChangeEmail && !showChangeUsername {
                         VStack(spacing: 0) {
                             VStack(spacing: 12) {
                                 Image("TopBar/MarieLogo")
@@ -46,7 +54,7 @@ struct SettingsView: View {
                                             .font(.system(size: 14))
 
                                         Text(errorMessage)
-                                            .font(ThibouTheme.Typography.callout)
+                                            .font(.system(size: 14, weight: .medium, design: .rounded))
                                             .foregroundColor(.red)
                                             .multilineTextAlignment(.leading)
 
@@ -59,7 +67,7 @@ struct SettingsView: View {
                                         }) {
                                             Image(systemName: "xmark")
                                                 .foregroundColor(.red.opacity(0.7))
-                                                .font(ThibouTheme.Typography.caption)
+                                                .font(.system(size: 12, weight: .medium))
                                         }
                                     }
                                     .padding(.horizontal, 16)
@@ -72,6 +80,7 @@ struct SettingsView: View {
                                                     .stroke(.red.opacity(0.3), lineWidth: 1)
                                             )
                                     )
+                                    .padding(.horizontal, 24)
                                     .transition(.asymmetric(
                                         insertion: .scale(scale: 0.8).combined(with: .opacity),
                                         removal: .scale(scale: 0.8).combined(with: .opacity)
@@ -138,16 +147,16 @@ struct SettingsView: View {
                                                     }
                                                 }
 
-                                                if user.hasPassword == true {
-                                                    SettingsButton(
-                                                        title: LocalizedKey.changePassword.localized,
-                                                        icon: "key",
-                                                        color: ThibouTheme.Colors.warmYellow
-                                                    ) {
-                                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                                            showChangePassword = true
-                                                        }
-                                                    }
+                                                SettingsButton(
+                                                    title: LocalizedKey.password.localized,
+                                                    icon: "key",
+                                                    color: ThibouTheme.Colors.warmYellow,
+                                                    subtitle: user.hasPassword == true ?
+                                                              LocalizedKey.updateMyPassword.localized :
+                                                              LocalizedKey.definePassword.localized
+                                                ) {
+                                                    pendingAction = .definePassword
+                                                    showRecentAuthSheet = true
                                                 }
 
                                                 if user.hasAppleSSO == true {
@@ -156,9 +165,7 @@ struct SettingsView: View {
                                                         icon: "apple.logo",
                                                         color: ThibouTheme.Colors.coral
                                                     ) {
-                                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                                            showAppleSSO = true
-                                                        }
+                                                        performUnlinkApple()
                                                     }
                                                 } else {
                                                     SettingsButton(
@@ -166,9 +173,7 @@ struct SettingsView: View {
                                                         icon: "apple.logo",
                                                         color: .black
                                                     ) {
-                                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                                            showAppleSSO = true
-                                                        }
+                                                        performLinkApple()
                                                     }
                                                 }
 
@@ -265,18 +270,23 @@ struct SettingsView: View {
                             glassNamespace: settingsGlassNamespace
                         )
                     } else if showChangePassword {
-                        ChangePasswordContentView(
+                        SetPasswordContentView(
                             authManager: authManager,
-                            onSuccess: {
+                            isSettingNew: authManager.currentUser?.hasPassword != true,
+                            onSuccess: { message in
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showChangePassword = false
                                 }
-                                successMessage = "Password changed successfully"
+                                successMessage = message
                             },
                             onBack: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showChangePassword = false
                                 }
+                            },
+                            onRecentAuthRequired: { newPassword in
+                                pendingAction = .setPassword(newPassword)
+                                showRecentAuthSheet = true
                             },
                             glassNamespace: settingsGlassNamespace
                         )
@@ -308,23 +318,6 @@ struct SettingsView: View {
                             onBack: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showChangeUsername = false
-                                }
-                            },
-                            glassNamespace: settingsGlassNamespace
-                        )
-                    } else if showAppleSSO {
-                        AppleSSOManagedView(
-                            authManager: authManager,
-                            isLinking: authManager.currentUser?.hasAppleSSO != true,
-                            onSuccess: { message in
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showAppleSSO = false
-                                }
-                                successMessage = message
-                            },
-                            onBack: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showAppleSSO = false
                                 }
                             },
                             glassNamespace: settingsGlassNamespace
@@ -378,10 +371,6 @@ struct SettingsView: View {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showChangeUsername = false
                             }
-                        } else if showAppleSSO {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showAppleSSO = false
-                            }
                         } else if showAccountSection {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showAccountSection = false
@@ -390,7 +379,7 @@ struct SettingsView: View {
                             onDismiss()
                         }
                     }) {
-                        Image(systemName: (showEmailLogin || showLanguageSelector || showAccountSection || showChangePassword || showChangeEmail || showChangeUsername || showAppleSSO) ? "chevron.left" : "xmark")
+                        Image(systemName: (showEmailLogin || showLanguageSelector || showAccountSection || showChangePassword || showChangeEmail || showChangeUsername) ? "chevron.left" : "xmark")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(ThibouTheme.Colors.leafGreen)
                             .contentTransition(.symbolEffect(.replace))
@@ -404,6 +393,22 @@ struct SettingsView: View {
             } message: {
                 Text(successMessage ?? "")
             }
+        }
+        .sheet(isPresented: $showRecentAuthSheet) {
+            RecentAuthSheet(
+                authManager: authManager,
+                onDismiss: {
+                    showRecentAuthSheet = false
+                    pendingAction = nil
+                },
+                onAuthSuccess: {
+                    showRecentAuthSheet = false
+                    if let action = pendingAction {
+                        executePendingAction(action)
+                    }
+                    pendingAction = nil
+                }
+            )
         }
     }
 
@@ -473,6 +478,106 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private func performLinkApple() {
+        Task {
+            do {
+                try await authManager.linkAppleSSO()
+                await MainActor.run {
+                    successMessage = LocalizedKey.appleAccountLinkedSuccessfully.localized
+                }
+            } catch {
+                await MainActor.run {
+                    if let errorMessage = extractRecentAuthError(from: error) {
+                        pendingAction = .linkApple
+                        showRecentAuthSheet = true
+                    } else {
+                        if let authError = error as? AuthError {
+                            self.errorMessage = authError.userFriendlyMessage
+                        } else {
+                            self.errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func performUnlinkApple() {
+        Task {
+            do {
+                try await authManager.unlinkAppleSSO()
+                await MainActor.run {
+                    successMessage = LocalizedKey.appleAccountUnlinkedSuccessfully.localized
+                }
+            } catch {
+                await MainActor.run {
+                    if let errorMessage = extractRecentAuthError(from: error) {
+                        pendingAction = .unlinkApple
+                        showRecentAuthSheet = true
+                    } else {
+                        if let authError = error as? AuthError {
+                            self.errorMessage = authError.userFriendlyMessage
+                        } else {
+                            self.errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func executePendingAction(_ action: PendingAction) {
+        switch action {
+        case .linkApple:
+            performLinkApple()
+        case .unlinkApple:
+            performUnlinkApple()
+        case .setPassword(let newPassword):
+            performSetPassword(newPassword)
+        case .definePassword:
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showChangePassword = true
+            }
+        }
+    }
+
+    private func performSetPassword(_ newPassword: String) {
+        Task {
+            do {
+                try await authManager.setPassword(newPassword)
+                await MainActor.run {
+                    let isNew = authManager.currentUser?.hasPassword != true
+                    successMessage = isNew ? LocalizedKey.passwordDefinedSuccessfully.localized : LocalizedKey.passwordUpdatedSuccessfully.localized
+                }
+            } catch {
+                await MainActor.run {
+                    if let errorMessage = extractRecentAuthError(from: error) {
+                        pendingAction = .setPassword(newPassword)
+                        showRecentAuthSheet = true
+                    } else {
+                        if let authError = error as? AuthError {
+                            self.errorMessage = authError.userFriendlyMessage
+                        } else {
+                            self.errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func extractRecentAuthError(from error: Error) -> String? {
+        if error is RecentAuthRequiredError {
+            return "Recent authentication required"
+        }
+        if let apiError = error as? APIError,
+           case .serverError(let message) = apiError,
+           message.contains("requiresRecentAuth") || message.contains("Token is too old") {
+            return message
+        }
+        return nil
     }
 }
 

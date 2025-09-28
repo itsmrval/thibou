@@ -32,5 +32,14 @@
   "current_password_placeholder": "Current password",
   "new_password_placeholder": "New password",
   "confirm_new_password": "Confirm new password",
-  "new_email_placeholder": "New email address"
+  "new_email_placeholder": "New email address",
+  "confirm_your_identity": "Confirm Your Identity",
+  "confirm_your_identity_description": "Recent authentication required for security",
+  "sign_in_with_password": "Sign in with Password",
+  "apple_account_linked_successfully": "Apple account linked successfully",
+  "apple_account_unlinked_successfully": "Apple account unlinked successfully",
+  "define_password": "Define a password",
+  "update_my_password": "Update my password",
+  "password_defined_successfully": "Password defined successfully",
+  "password_updated_successfully": "Password updated successfully"
 }

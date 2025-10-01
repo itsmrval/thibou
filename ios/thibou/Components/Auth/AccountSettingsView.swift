@@ -210,6 +210,16 @@ struct AccountSettingsContentView: View {
     }
 
     private func performLinkApple() {
+        pendingAction = .linkApple
+        showRecentAuthSheet = true
+    }
+
+    private func performUnlinkApple() {
+        pendingAction = .unlinkApple
+        showRecentAuthSheet = true
+    }
+
+    private func executeLinkApple() {
         Task {
             do {
                 try await authManager.linkAppleSSO()
@@ -218,22 +228,17 @@ struct AccountSettingsContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    if extractRecentAuthError(from: error) != nil {
-                        pendingAction = .linkApple
-                        showRecentAuthSheet = true
+                    if let authError = error as? AuthError {
+                        self.errorMessage = authError.userFriendlyMessage
                     } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
+                        self.errorMessage = error.localizedDescription
                     }
                 }
             }
         }
     }
 
-    private func performUnlinkApple() {
+    private func executeUnlinkApple() {
         Task {
             do {
                 try await authManager.unlinkAppleSSO()
@@ -242,15 +247,10 @@ struct AccountSettingsContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    if extractRecentAuthError(from: error) != nil {
-                        pendingAction = .unlinkApple
-                        showRecentAuthSheet = true
+                    if let authError = error as? AuthError {
+                        self.errorMessage = authError.userFriendlyMessage
                     } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
+                        self.errorMessage = error.localizedDescription
                     }
                 }
             }
@@ -266,9 +266,9 @@ struct AccountSettingsContentView: View {
     private func executePendingAction(_ action: PendingAction) {
         switch action {
         case .linkApple:
-            performLinkApple()
+            executeLinkApple()
         case .unlinkApple:
-            performUnlinkApple()
+            executeUnlinkApple()
         case .setPassword(let newPassword):
             performSetPassword(newPassword)
         }

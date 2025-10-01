@@ -8,7 +8,6 @@ struct SettingsView: View {
 
     @State private var showEmailLogin = false
     @State private var showLanguageSelector = false
-    @State private var showAccountSection = false
     @State private var showChangePassword = false
     @State private var showChangeEmail = false
     @State private var showChangeUsername = false
@@ -21,9 +20,9 @@ struct SettingsView: View {
     enum PendingAction {
         case linkApple
         case unlinkApple
-        case setPassword(String)
-        case changeUsername(String)
-        case changeEmail(String)
+        case changePassword
+        case changeEmail
+        case changeUsername
     }
     @StateObject private var languageManager = LanguageManager.shared
     @Namespace private var settingsGlassNamespace
@@ -35,7 +34,7 @@ struct SettingsView: View {
                     ThibouTheme.Colors.backgroundGradient
                         .ignoresSafeArea()
 
-                    if !showEmailLogin && !showLanguageSelector && !showAccountSection && !showChangePassword && !showChangeEmail && !showChangeUsername {
+                    if !showEmailLogin && !showLanguageSelector && !showChangePassword && !showChangeEmail && !showChangeUsername {
                         VStack(spacing: 0) {
                             VStack(spacing: 12) {
                                 Image("TopBar/MarieLogo")
@@ -135,9 +134,9 @@ struct SettingsView: View {
 
                                                 if user.email != nil {
                                                     SettingsButton(
-                                                        title: LocalizedKey.emailAddress.localized,
+                                                        title: LocalizedKey.changeEmail.localized,
                                                         icon: "envelope",
-                                                        color: ThibouTheme.Colors.skyBlue,
+                                                        color: ThibouTheme.Colors.leafGreen,
                                                         subtitle: user.email
                                                     ) {
                                                         performChangeEmail()
@@ -147,12 +146,12 @@ struct SettingsView: View {
                                                 SettingsButton(
                                                     title: LocalizedKey.password.localized,
                                                     icon: "key",
-                                                    color: ThibouTheme.Colors.warmYellow,
+                                                    color: ThibouTheme.Colors.leafGreen,
                                                     subtitle: user.hasPassword == true ?
                                                               LocalizedKey.updateMyPassword.localized :
                                                               LocalizedKey.definePassword.localized
                                                 ) {
-                                                    performDefinePassword()
+                                                    performChangePassword()
                                                 }
 
                                                 if user.hasAppleSSO == true {
@@ -172,6 +171,9 @@ struct SettingsView: View {
                                                         performLinkApple()
                                                     }
                                                 }
+
+                                                Divider()
+                                                    .padding(.vertical)
 
                                                 SettingsButton(
                                                     title: LocalizedKey.signOut.localized,
@@ -314,15 +316,6 @@ struct SettingsView: View {
                             },
                             glassNamespace: settingsGlassNamespace
                         )
-                    } else if showAccountSection {
-                        AccountSectionView(
-                            authManager: authManager,
-                            onBack: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showAccountSection = false
-                                }
-                            }
-                        )
                     } else if showEmailLogin {
                         EmailLoginContentView(
                             authManager: authManager,
@@ -362,15 +355,11 @@ struct SettingsView: View {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showChangeUsername = false
                             }
-                        } else if showAccountSection {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showAccountSection = false
-                            }
                         } else {
                             onDismiss()
                         }
                     }) {
-                        Image(systemName: (showEmailLogin || showLanguageSelector || showAccountSection || showChangePassword || showChangeEmail || showChangeUsername) ? "chevron.left" : "xmark")
+                        Image(systemName: (showEmailLogin || showLanguageSelector || showChangePassword || showChangeEmail || showChangeUsername) ? "chevron.left" : "xmark")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(ThibouTheme.Colors.leafGreen)
                             .contentTransition(.symbolEffect(.replace))
@@ -384,6 +373,13 @@ struct SettingsView: View {
             } message: {
                 Text(successMessage ?? "")
             }
+            .alert("Error", isPresented: .constant(errorMessage != nil)) {
+                Button("OK") {
+                    errorMessage = nil
+                }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
         .sheet(isPresented: $showRecentAuthSheet) {
             RecentAuthSheet(
@@ -394,10 +390,12 @@ struct SettingsView: View {
                 },
                 onAuthSuccess: {
                     showRecentAuthSheet = false
-                    if let action = pendingAction {
-                        executePendingAction(action)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        if let action = pendingAction {
+                            executePendingAction(action)
+                        }
+                        pendingAction = nil
                     }
-                    pendingAction = nil
                 }
             )
         }
@@ -471,14 +469,6 @@ struct SettingsView: View {
         }
     }
 
-    private var actionsHelper: AccountActionsHelper {
-        AccountActionsHelper(
-            authManager: authManager,
-            successMessage: $successMessage,
-            errorMessage: $errorMessage
-        )
-    }
-
     private func performLinkApple() {
         pendingAction = .linkApple
         showRecentAuthSheet = true
@@ -487,6 +477,14 @@ struct SettingsView: View {
     private func performUnlinkApple() {
         pendingAction = .unlinkApple
         showRecentAuthSheet = true
+    }
+
+    private var actionsHelper: AccountActionsHelper {
+        AccountActionsHelper(
+            authManager: authManager,
+            successMessage: $successMessage,
+            errorMessage: $errorMessage
+        )
     }
 
     private func executeLinkApple() {
@@ -501,23 +499,19 @@ struct SettingsView: View {
         }
     }
 
-    private func performDefinePassword() {
+    private func performChangePassword() {
+        pendingAction = .changePassword
         showRecentAuthSheet = true
-        pendingAction = .setPassword("")
-    }
-
-    private func performChangeUsername() {
-        showRecentAuthSheet = true
-        if let currentName = authManager.currentUser?.name {
-            pendingAction = .changeUsername(currentName)
-        }
     }
 
     private func performChangeEmail() {
+        pendingAction = .changeEmail
         showRecentAuthSheet = true
-        if let currentEmail = authManager.currentUser?.email {
-            pendingAction = .changeEmail(currentEmail)
-        }
+    }
+
+    private func performChangeUsername() {
+        pendingAction = .changeUsername
+        showRecentAuthSheet = true
     }
 
     private func executePendingAction(_ action: PendingAction) {
@@ -526,17 +520,17 @@ struct SettingsView: View {
             executeLinkApple()
         case .unlinkApple:
             executeUnlinkApple()
-        case .setPassword:
+        case .changePassword:
             withAnimation(.easeInOut(duration: 0.3)) {
                 showChangePassword = true
-            }
-        case .changeUsername:
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showChangeUsername = true
             }
         case .changeEmail:
             withAnimation(.easeInOut(duration: 0.3)) {
                 showChangeEmail = true
+            }
+        case .changeUsername:
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showChangeUsername = true
             }
         }
     }
@@ -651,18 +645,6 @@ struct LanguageSelectorView: View {
             Spacer()
         }
         .padding(.bottom, 40)
-    }
-}
-
-struct AccountSectionView: View {
-    @ObservedObject var authManager: AuthManager
-    let onBack: () -> Void
-
-    var body: some View {
-        AccountSettingsContentView(
-            authManager: authManager,
-            onDismiss: onBack
-        )
     }
 }
 
@@ -829,6 +811,7 @@ struct EmailLoginContentView: View {
 }
 
 
+
 struct ChangeUsernameContentView: View {
     @ObservedObject var authManager: AuthManager
     let onSuccess: () -> Void
@@ -841,7 +824,7 @@ struct ChangeUsernameContentView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Change Username")
+            Text(LocalizedKey.username.localized)
                 .font(ThibouTheme.Typography.mediumTitle)
                 .padding(.top, 10)
 
@@ -896,7 +879,7 @@ struct ChangeUsernameContentView: View {
 
             Button(action: changeUsername) {
                 ZStack {
-                    Text("Change Username")
+                    Text(LocalizedKey.save.localized)
                         .font(ThibouTheme.Typography.body)
                         .opacity(isLoading ? 0 : 1)
 

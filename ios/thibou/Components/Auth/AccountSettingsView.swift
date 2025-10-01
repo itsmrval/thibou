@@ -181,7 +181,7 @@ struct AccountSettingsContentView: View {
             }
         }
         .toolbar {
-            if showAsSheet {
+            if showAsSheet && !showRecentAuthSheet {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -218,10 +218,12 @@ struct AccountSettingsContentView: View {
                 },
                 onAuthSuccess: {
                     showRecentAuthSheet = false
-                    if let action = pendingAction {
-                        executePendingAction(action)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        if let action = pendingAction {
+                            executePendingAction(action)
+                        }
+                        pendingAction = nil
                     }
-                    pendingAction = nil
                 }
             )
         }

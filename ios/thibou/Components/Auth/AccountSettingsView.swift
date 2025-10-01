@@ -1,28 +1,9 @@
 import SwiftUI
 import AuthenticationServices
 
-struct AccountSettingsView: View {
-    @ObservedObject var authManager: AuthManager
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationView {
-            AccountSettingsContentView(
-                authManager: authManager,
-                onDismiss: { dismiss() },
-                showAsSheet: true
-            )
-            .navigationTitle(LocalizedKey.account.localized)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-        }
-    }
-}
-
 struct AccountSettingsContentView: View {
     @ObservedObject var authManager: AuthManager
     let onDismiss: () -> Void
-    let showAsSheet: Bool
 
     @State private var showChangePassword = false
     @State private var showChangeEmail = false
@@ -47,16 +28,14 @@ struct AccountSettingsContentView: View {
 
                 if !showChangePassword && !showChangeEmail {
                     VStack(spacing: 24) {
-                        if !showAsSheet {
-                            Text(LocalizedKey.account.localized)
-                                .font(ThibouTheme.Typography.mediumTitle)
-                                .foregroundColor(ThibouTheme.Colors.leafGreen)
-                                .padding(.top, 20)
-                        }
+                        Text(LocalizedKey.account.localized)
+                            .font(ThibouTheme.Typography.mediumTitle)
+                            .foregroundColor(ThibouTheme.Colors.leafGreen)
+                            .padding(.top, 20)
 
                         if let user = authManager.currentUser {
                             VStack(spacing: 12) {
-                                Image(showAsSheet ? "TopBar/ThibouLogo" : "TopBar/MarieLogo")
+                                Image("TopBar/MarieLogo")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 60, height: 60)
@@ -70,6 +49,8 @@ struct AccountSettingsContentView: View {
                                         Text(email)
                                             .font(ThibouTheme.Typography.body)
                                             .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
                                     }
                                 }
                             }
@@ -177,21 +158,6 @@ struct AccountSettingsContentView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: ThibouTheme.Colors.leafGreen))
                         .scaleEffect(1.5)
-                }
-            }
-        }
-        .toolbar {
-            if showAsSheet && !showRecentAuthSheet {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        handleBackAction()
-                    }) {
-                        Image(systemName: showChangePassword || showChangeEmail ? "chevron.left" : "xmark")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(ThibouTheme.Colors.leafGreen)
-                            .contentTransition(.symbolEffect(.replace))
-                    }
                 }
             }
         }

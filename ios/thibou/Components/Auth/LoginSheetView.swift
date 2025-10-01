@@ -329,8 +329,7 @@ struct SettingsView: View {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showAccountSection = false
                                 }
-                            },
-                            glassNamespace: settingsGlassNamespace
+                            }
                         )
                     } else if showEmailLogin {
                         EmailLoginContentView(
@@ -612,6 +611,8 @@ struct SettingsButton: View {
                         Text(subtitle)
                             .font(.system(size: 14, weight: .medium, design: .rounded))
                             .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                 }
 
@@ -694,13 +695,11 @@ struct LanguageSelectorView: View {
 struct AccountSectionView: View {
     @ObservedObject var authManager: AuthManager
     let onBack: () -> Void
-    let glassNamespace: Namespace.ID
 
     var body: some View {
         AccountSettingsContentView(
             authManager: authManager,
-            onDismiss: onBack,
-            showAsSheet: false
+            onDismiss: onBack
         )
     }
 }

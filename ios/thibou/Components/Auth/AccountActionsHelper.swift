@@ -46,7 +46,7 @@ struct AccountActionsHelper {
         }
     }
 
-    func setPassword(_ newPassword: String, onRecentAuthRequired: @escaping (String) -> Void) async {
+    func setPassword(_ newPassword: String) async {
         do {
             try await authManager.setPassword(newPassword)
             await MainActor.run {
@@ -55,28 +55,46 @@ struct AccountActionsHelper {
             }
         } catch {
             await MainActor.run {
-                if extractRecentAuthError(from: error) != nil {
-                    onRecentAuthRequired(newPassword)
+                if let authError = error as? AuthError {
+                    errorMessage.wrappedValue = authError.userFriendlyMessage
                 } else {
-                    if let authError = error as? AuthError {
-                        errorMessage.wrappedValue = authError.userFriendlyMessage
-                    } else {
-                        errorMessage.wrappedValue = error.localizedDescription
-                    }
+                    errorMessage.wrappedValue = error.localizedDescription
                 }
             }
         }
     }
 
-    private func extractRecentAuthError(from error: Error) -> String? {
-        if error is RecentAuthRequiredError {
-            return "Recent authentication required"
+    func changeUsername(_ newUsername: String) async {
+        do {
+            try await authManager.changeUsername(newUsername: newUsername)
+            await MainActor.run {
+                successMessage.wrappedValue = "Username changed successfully"
+            }
+        } catch {
+            await MainActor.run {
+                if let authError = error as? AuthError {
+                    errorMessage.wrappedValue = authError.userFriendlyMessage
+                } else {
+                    errorMessage.wrappedValue = error.localizedDescription
+                }
+            }
         }
-        if let apiError = error as? APIError,
-           case .serverError(let message) = apiError,
-           message.contains("requiresRecentAuth") || message.contains("Token is too old") {
-            return message
+    }
+
+    func changeEmail(_ newEmail: String) async {
+        do {
+            try await authManager.changeEmail(newEmail: newEmail)
+            await MainActor.run {
+                successMessage.wrappedValue = "Email changed successfully"
+            }
+        } catch {
+            await MainActor.run {
+                if let authError = error as? AuthError {
+                    errorMessage.wrappedValue = authError.userFriendlyMessage
+                } else {
+                    errorMessage.wrappedValue = error.localizedDescription
+                }
+            }
         }
-        return nil
     }
 }

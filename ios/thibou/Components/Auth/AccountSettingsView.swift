@@ -121,17 +121,13 @@ struct AccountSettingsContentView: View {
                         authManager: authManager,
                         isSettingNew: authManager.currentUser?.hasPassword != true,
                         onSuccess: { message in
-                            withAnimation(.easeInOut(duration: 0.3)) {
+                            withAnimation (.easeInOut(duration: 0.3)) {
                                 showChangePassword = false
                             }
                             successMessage = message
                         },
                         onBack: {
                             handleBackAction()
-                        },
-                        onRecentAuthRequired: { newPassword in
-                            pendingAction = .setPassword(newPassword)
-                            showRecentAuthSheet = true
                         },
                         glassNamespace: accountGlassNamespace
                     )
@@ -258,10 +254,7 @@ struct AccountSettingsContentView: View {
 
     private func performSetPassword(_ newPassword: String) {
         Task {
-            await actionsHelper.setPassword(newPassword) { password in
-                pendingAction = .setPassword(password)
-                showRecentAuthSheet = true
-            }
+            await actionsHelper.setPassword(newPassword)
             await MainActor.run {
                 if successMessage != nil {
                     withAnimation(.easeInOut(duration: 0.3)) {

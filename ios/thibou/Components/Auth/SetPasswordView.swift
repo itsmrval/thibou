@@ -5,7 +5,6 @@ struct SetPasswordContentView: View {
     let isSettingNew: Bool
     let onSuccess: (String) -> Void
     let onBack: () -> Void
-    let onRecentAuthRequired: (String) -> Void
     let glassNamespace: Namespace.ID
 
     @State private var newPassword = ""
@@ -126,31 +125,15 @@ struct SetPasswordContentView: View {
                 await MainActor.run {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isLoading = false
-                        if extractRecentAuthError(from: error) != nil {
-                            onRecentAuthRequired(newPassword)
+                        if let authError = error as? AuthError {
+                            errorMessage = authError.userFriendlyMessage
                         } else {
-                            if let authError = error as? AuthError {
-                                errorMessage = authError.userFriendlyMessage
-                            } else {
-                                errorMessage = error.localizedDescription
-                            }
+                            errorMessage = error.localizedDescription
                         }
                     }
                 }
             }
         }
-    }
-
-    private func extractRecentAuthError(from error: Error) -> String? {
-        if error is RecentAuthRequiredError {
-            return "Recent authentication required"
-        }
-        if let apiError = error as? APIError,
-           case .serverError(let message) = apiError,
-           message.contains("requiresRecentAuth") || message.contains("Token is too old") {
-            return message
-        }
-        return nil
     }
 }
 
@@ -161,7 +144,6 @@ struct ChangeEmailContentView: View {
     let glassNamespace: Namespace.ID
 
     @State private var newEmail = ""
-    @State private var password = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -178,12 +160,6 @@ struct ChangeEmailContentView: View {
                     .padding()
                     .glassEffect()
                     .glassEffectID("new_email_field", in: glassNamespace)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                SecureField(LocalizedKey.currentPassword.localized, text: $password)
-                    .padding()
-                    .glassEffect()
-                    .glassEffectID("email_password_field", in: glassNamespace)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 if let errorMessage = errorMessage {
@@ -257,7 +233,7 @@ struct ChangeEmailContentView: View {
     }
 
     private var isFormValid: Bool {
-        return !newEmail.isEmpty && !password.isEmpty && newEmail.contains("@")
+        return !newEmail.isEmpty && newEmail.contains("@")
     }
 
     private func changeEmail() {
@@ -268,15 +244,19 @@ struct ChangeEmailContentView: View {
 
         Task {
             do {
-                try await authManager.changeEmail(newEmail: newEmail, password: password)
+                try await authManager.changeEmail(newEmail: newEmail)
                 await MainActor.run {
                     onSuccess()
                 }
             } catch {
                 await MainActor.run {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        errorMessage = error.localizedDescription
                         isLoading = false
+                        if let authError = error as? AuthError {
+                            errorMessage = authError.userFriendlyMessage
+                        } else {
+                            errorMessage = error.localizedDescription
+                        }
                     }
                 }
             }

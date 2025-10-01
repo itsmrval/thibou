@@ -22,7 +22,8 @@ struct SettingsView: View {
         case linkApple
         case unlinkApple
         case setPassword(String)
-        case definePassword
+        case changeUsername(String)
+        case changeEmail(String)
     }
     @StateObject private var languageManager = LanguageManager.shared
     @Namespace private var settingsGlassNamespace
@@ -129,9 +130,7 @@ struct SettingsView: View {
                                                     color: ThibouTheme.Colors.leafGreen,
                                                     subtitle: user.name
                                                 ) {
-                                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                                        showChangeUsername = true
-                                                    }
+                                                    performChangeUsername()
                                                 }
 
                                                 if user.email != nil {
@@ -141,9 +140,7 @@ struct SettingsView: View {
                                                         color: ThibouTheme.Colors.skyBlue,
                                                         subtitle: user.email
                                                     ) {
-                                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                                            showChangeEmail = true
-                                                        }
+                                                        performChangeEmail()
                                                     }
                                                 }
 
@@ -155,8 +152,7 @@ struct SettingsView: View {
                                                               LocalizedKey.updateMyPassword.localized :
                                                               LocalizedKey.definePassword.localized
                                                 ) {
-                                                    pendingAction = .definePassword
-                                                    showRecentAuthSheet = true
+                                                    performDefinePassword()
                                                 }
 
                                                 if user.hasAppleSSO == true {
@@ -283,10 +279,6 @@ struct SettingsView: View {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showChangePassword = false
                                 }
-                            },
-                            onRecentAuthRequired: { newPassword in
-                                pendingAction = .setPassword(newPassword)
-                                showRecentAuthSheet = true
                             },
                             glassNamespace: settingsGlassNamespace
                         )
@@ -509,26 +501,42 @@ struct SettingsView: View {
         }
     }
 
+    private func performDefinePassword() {
+        showRecentAuthSheet = true
+        pendingAction = .setPassword("")
+    }
+
+    private func performChangeUsername() {
+        showRecentAuthSheet = true
+        if let currentName = authManager.currentUser?.name {
+            pendingAction = .changeUsername(currentName)
+        }
+    }
+
+    private func performChangeEmail() {
+        showRecentAuthSheet = true
+        if let currentEmail = authManager.currentUser?.email {
+            pendingAction = .changeEmail(currentEmail)
+        }
+    }
+
     private func executePendingAction(_ action: PendingAction) {
         switch action {
         case .linkApple:
             executeLinkApple()
         case .unlinkApple:
             executeUnlinkApple()
-        case .setPassword(let newPassword):
-            performSetPassword(newPassword)
-        case .definePassword:
+        case .setPassword:
             withAnimation(.easeInOut(duration: 0.3)) {
                 showChangePassword = true
             }
-        }
-    }
-
-    private func performSetPassword(_ newPassword: String) {
-        Task {
-            await actionsHelper.setPassword(newPassword) { password in
-                pendingAction = .setPassword(password)
-                showRecentAuthSheet = true
+        case .changeUsername:
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showChangeUsername = true
+            }
+        case .changeEmail:
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showChangeEmail = true
             }
         }
     }
@@ -939,12 +947,12 @@ struct ChangeUsernameContentView: View {
             } catch {
                 await MainActor.run {
                     withAnimation(.easeInOut(duration: 0.2)) {
+                        isLoading = false
                         if let authError = error as? AuthError {
                             errorMessage = authError.userFriendlyMessage
                         } else {
                             errorMessage = error.localizedDescription
                         }
-                        isLoading = false
                     }
                 }
             }

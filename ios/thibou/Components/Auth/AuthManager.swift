@@ -395,25 +395,18 @@ final class AuthManager: ObservableObject {
 
         if httpResponse.statusCode == 200 {
             try await refreshUserData()
-        } else if httpResponse.statusCode == 403 {
-            let errorData = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            if let requiresRecentAuth = errorData?["requiresRecentAuth"] as? Bool, requiresRecentAuth {
-                throw RecentAuthRequiredError()
-            }
-            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to set password")
-            throw AuthError.serverError(errorMessage)
         } else {
             let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to set password")
             throw AuthError.serverError(errorMessage)
         }
     }
 
-    func changeEmail(newEmail: String, password: String) async throws {
+    func changeEmail(newEmail: String) async throws {
         guard let token = authToken, let userId = currentUser?.id else {
             throw AuthError.noToken
         }
 
-        let requestBody = ["email": newEmail, "password": password]
+        let requestBody = ["email": newEmail]
         let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
 
         let (data, httpResponse) = try await apiManager.makeRequestWithoutDecoding(

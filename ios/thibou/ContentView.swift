@@ -8,7 +8,7 @@ struct DetailTabActions {
 }
 
 struct ContentView: View {
-    @StateObject private var authManager = AuthManager()
+    @StateObject private var authManager = AuthManager.shared
     @State private var searchText = ""
 
     var body: some View {

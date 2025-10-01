@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HomeView: View {
     @StateObject private var villagerService = VillagerService.shared
-    @StateObject private var authManager = AuthManager.shared
     @StateObject private var localizationManager = LocalizationManager.shared
     @State private var blinkOpacity = 1.0
 

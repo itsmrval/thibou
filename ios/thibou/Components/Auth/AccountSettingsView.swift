@@ -311,6 +311,9 @@ struct AccountSettingsContentView: View {
             do {
                 try await authManager.setPassword(newPassword)
                 await MainActor.run {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showChangePassword = false
+                    }
                     let isNew = authManager.currentUser?.hasPassword != true
                     successMessage = isNew ? LocalizedKey.passwordDefinedSuccessfully.localized : LocalizedKey.passwordUpdatedSuccessfully.localized
                 }

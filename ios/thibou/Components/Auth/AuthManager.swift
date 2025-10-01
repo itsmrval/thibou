@@ -125,7 +125,7 @@ final class AuthManager: ObservableObject {
     private let apiManager = APIManager.shared
     private let keychainManager = KeychainManager.shared
 
-    init() {
+    private init() {
         Task { @MainActor in
             await self.checkStoredAuth()
         }

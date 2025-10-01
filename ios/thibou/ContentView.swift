@@ -134,6 +134,19 @@ struct MainAppView: View {
         }
     }
 
+    private func goToPreviousCategory() {
+        guard let currentIndex = categories.firstIndex(of: libraryCategory) else { return }
+        let prevIndex = max(currentIndex - 1, 0)
+        libraryCategory = categories[prevIndex]
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+    }
+
+    private func goToNextCategory() {
+        guard let currentIndex = categories.firstIndex(of: libraryCategory) else { return }
+        let nextIndex = min(currentIndex + 1, categories.count - 1)
+        libraryCategory = categories[nextIndex]
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+    }
 }
 
 struct AuthNavigationBar: View {

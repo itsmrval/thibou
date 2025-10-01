@@ -479,60 +479,42 @@ struct SettingsView: View {
         }
     }
 
+    private var actionsHelper: AccountActionsHelper {
+        AccountActionsHelper(
+            authManager: authManager,
+            successMessage: $successMessage,
+            errorMessage: $errorMessage
+        )
+    }
+
     private func performLinkApple() {
-        Task {
-            do {
-                try await authManager.linkAppleSSO()
-                await MainActor.run {
-                    successMessage = LocalizedKey.appleAccountLinkedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if let errorMessage = extractRecentAuthError(from: error) {
-                        pendingAction = .linkApple
-                        showRecentAuthSheet = true
-                    } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
-                    }
-                }
-            }
-        }
+        pendingAction = .linkApple
+        showRecentAuthSheet = true
     }
 
     private func performUnlinkApple() {
+        pendingAction = .unlinkApple
+        showRecentAuthSheet = true
+    }
+
+    private func executeLinkApple() {
         Task {
-            do {
-                try await authManager.unlinkAppleSSO()
-                await MainActor.run {
-                    successMessage = LocalizedKey.appleAccountUnlinkedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if let errorMessage = extractRecentAuthError(from: error) {
-                        pendingAction = .unlinkApple
-                        showRecentAuthSheet = true
-                    } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
-                    }
-                }
-            }
+            await actionsHelper.linkAppleSSO()
+        }
+    }
+
+    private func executeUnlinkApple() {
+        Task {
+            await actionsHelper.unlinkAppleSSO()
         }
     }
 
     private func executePendingAction(_ action: PendingAction) {
         switch action {
         case .linkApple:
-            performLinkApple()
+            executeLinkApple()
         case .unlinkApple:
-            performUnlinkApple()
+            executeUnlinkApple()
         case .setPassword(let newPassword):
             performSetPassword(newPassword)
         case .definePassword:
@@ -544,39 +526,11 @@ struct SettingsView: View {
 
     private func performSetPassword(_ newPassword: String) {
         Task {
-            do {
-                try await authManager.setPassword(newPassword)
-                await MainActor.run {
-                    let isNew = authManager.currentUser?.hasPassword != true
-                    successMessage = isNew ? LocalizedKey.passwordDefinedSuccessfully.localized : LocalizedKey.passwordUpdatedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if let errorMessage = extractRecentAuthError(from: error) {
-                        pendingAction = .setPassword(newPassword)
-                        showRecentAuthSheet = true
-                    } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
-                    }
-                }
+            await actionsHelper.setPassword(newPassword) { password in
+                pendingAction = .setPassword(password)
+                showRecentAuthSheet = true
             }
         }
-    }
-
-    private func extractRecentAuthError(from error: Error) -> String? {
-        if error is RecentAuthRequiredError {
-            return "Recent authentication required"
-        }
-        if let apiError = error as? APIError,
-           case .serverError(let message) = apiError,
-           message.contains("requiresRecentAuth") || message.contains("Token is too old") {
-            return message
-        }
-        return nil
     }
 }
 
@@ -959,6 +913,11 @@ struct ChangeUsernameContentView: View {
             Spacer()
         }
         .padding(.bottom, 40)
+        .onAppear {
+            if newUsername.isEmpty, let currentName = authManager.currentUser?.name {
+                newUsername = currentName
+            }
+        }
     }
 
     private var isFormValid: Bool {
@@ -973,15 +932,18 @@ struct ChangeUsernameContentView: View {
 
         Task {
             do {
-                // TODO: Implement username change in AuthManager
-                // try await authManager.changeUsername(newUsername: newUsername)
+                try await authManager.changeUsername(newUsername: newUsername)
                 await MainActor.run {
                     onSuccess()
                 }
             } catch {
                 await MainActor.run {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        errorMessage = error.localizedDescription
+                        if let authError = error as? AuthError {
+                            errorMessage = authError.userFriendlyMessage
+                        } else {
+                            errorMessage = error.localizedDescription
+                        }
                         isLoading = false
                     }
                 }

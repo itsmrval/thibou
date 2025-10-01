@@ -431,6 +431,29 @@ final class AuthManager: ObservableObject {
         }
     }
 
+    func changeUsername(newUsername: String) async throws {
+        guard let token = authToken, let userId = currentUser?.id else {
+            throw AuthError.noToken
+        }
+
+        let requestBody = ["name": newUsername]
+        let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
+
+        let (data, httpResponse) = try await apiManager.makeRequestWithoutDecoding(
+            endpoint: "/user/\(userId)",
+            method: .PUT,
+            body: bodyData,
+            requiresAuth: true
+        )
+
+        if httpResponse.statusCode == 200 {
+            try await refreshUserData()
+        } else {
+            let errorMessage = apiManager.extractErrorMessage(from: data, defaultMessage: "Failed to change username")
+            throw AuthError.serverError(errorMessage)
+        }
+    }
+
     @MainActor
     private func refreshUserData() async throws {
         guard let token = authToken else {

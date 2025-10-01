@@ -219,41 +219,23 @@ struct AccountSettingsContentView: View {
         showRecentAuthSheet = true
     }
 
+    private var actionsHelper: AccountActionsHelper {
+        AccountActionsHelper(
+            authManager: authManager,
+            successMessage: $successMessage,
+            errorMessage: $errorMessage
+        )
+    }
+
     private func executeLinkApple() {
         Task {
-            do {
-                try await authManager.linkAppleSSO()
-                await MainActor.run {
-                    successMessage = LocalizedKey.appleAccountLinkedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if let authError = error as? AuthError {
-                        self.errorMessage = authError.userFriendlyMessage
-                    } else {
-                        self.errorMessage = error.localizedDescription
-                    }
-                }
-            }
+            await actionsHelper.linkAppleSSO()
         }
     }
 
     private func executeUnlinkApple() {
         Task {
-            do {
-                try await authManager.unlinkAppleSSO()
-                await MainActor.run {
-                    successMessage = LocalizedKey.appleAccountUnlinkedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if let authError = error as? AuthError {
-                        self.errorMessage = authError.userFriendlyMessage
-                    } else {
-                        self.errorMessage = error.localizedDescription
-                    }
-                }
-            }
+            await actionsHelper.unlinkAppleSSO()
         }
     }
 
@@ -276,41 +258,17 @@ struct AccountSettingsContentView: View {
 
     private func performSetPassword(_ newPassword: String) {
         Task {
-            do {
-                try await authManager.setPassword(newPassword)
-                await MainActor.run {
+            await actionsHelper.setPassword(newPassword) { password in
+                pendingAction = .setPassword(password)
+                showRecentAuthSheet = true
+            }
+            await MainActor.run {
+                if successMessage != nil {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         showChangePassword = false
-                    }
-                    let isNew = authManager.currentUser?.hasPassword != true
-                    successMessage = isNew ? LocalizedKey.passwordDefinedSuccessfully.localized : LocalizedKey.passwordUpdatedSuccessfully.localized
-                }
-            } catch {
-                await MainActor.run {
-                    if extractRecentAuthError(from: error) != nil {
-                        pendingAction = .setPassword(newPassword)
-                        showRecentAuthSheet = true
-                    } else {
-                        if let authError = error as? AuthError {
-                            self.errorMessage = authError.userFriendlyMessage
-                        } else {
-                            self.errorMessage = error.localizedDescription
-                        }
                     }
                 }
             }
         }
-    }
-
-    private func extractRecentAuthError(from error: Error) -> String? {
-        if error is RecentAuthRequiredError {
-            return "Recent authentication required"
-        }
-        if let apiError = error as? APIError,
-           case .serverError(let message) = apiError,
-           message.contains("requiresRecentAuth") || message.contains("Token is too old") {
-            return message
-        }
-        return nil
     }
 }

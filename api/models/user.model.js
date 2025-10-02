@@ -42,25 +42,16 @@ const UserSchema = new mongoose.Schema({
     },
     island: {
         residents: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Villager',
-            validate: {
-                validator: function(residents) {
-                    return residents.length <= 10;
-                },
-                message: 'Island can have a maximum of 10 residents'
+            name: {
+                type: String,
+                required: true
+            },
+            favorite: {
+                type: Boolean,
+                default: false
             }
         }],
-        favorites: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Villager',
-            validate: {
-                validator: function(favorites) {
-                    return favorites.length <= 3;
-                },
-                message: 'You can have a maximum of 3 favorite villagers'
-            }
-        }],
+        likes: [String],
         updatedAt: {
             type: Date,
             default: Date.now
@@ -106,7 +97,7 @@ UserSchema.methods.toFullJSON = function() {
         email: obj.email,
         role: obj.role,
         ssoProviders: obj.ssoProviders,
-        island: obj.island || { residents: [], favorites: [], updatedAt: new Date() },
+        island: obj.island || { residents: [], likes: [], updatedAt: new Date() },
         createdAt: obj.createdAt,
     };
 };

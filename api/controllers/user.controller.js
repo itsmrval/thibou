@@ -165,42 +165,71 @@ const updateProfile = async (userId, updateData) => {
     }
 };
 
-const getIslandData = async (userId) => {
+const getIslandResidents = async (userId) => {
     try {
-        const user = await User.findById(userId).populate('island.residents island.favorites');
+        const user = await User.findById(userId);
         if (!user) {
             throw new Error('User not found');
         }
 
-        return {
-            residents: user.island?.residents || [],
-            favorites: user.island?.favorites || [],
-            updatedAt: user.island?.updatedAt || new Date()
-        };
+        const Villager = require('../models/villager.model');
+        const residents = user.island?.residents || [];
+
+        const residentNames = residents.map(r => r.name);
+        const villagers = await Villager.find({ 'name.en': { $in: residentNames } });
+
+        const residentsWithId = residents.map(r => {
+            const villager = villagers.find(v => v.name.en === r.name);
+            return {
+                id: villager?.id,
+                name: r.name,
+                favorite: r.favorite
+            };
+        });
+
+        return residentsWithId;
     } catch (error) {
         throw error;
     }
 };
 
-const updateIslandResidents = async (userId, villagerIds) => {
+const getLikes = async (userId) => {
     try {
-        if (!Array.isArray(villagerIds)) {
-            throw new Error('Villager IDs must be an array');
-        }
-
-        if (villagerIds.length > 10) {
-            throw new Error('Island can have a maximum of 10 residents');
-        }
-
-        const uniqueIds = [...new Set(villagerIds)];
-        if (uniqueIds.length !== villagerIds.length) {
-            throw new Error('Duplicate villager IDs are not allowed');
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
         }
 
         const Villager = require('../models/villager.model');
-        const villagerCount = await Villager.countDocuments({ _id: { $in: villagerIds } });
-        if (villagerCount !== villagerIds.length) {
-            throw new Error('One or more villager IDs are invalid');
+        const likeNames = user.island?.likes || [];
+
+        const villagers = await Villager.find({ 'name.en': { $in: likeNames } });
+
+        return villagers;
+    } catch (error) {
+        throw error;
+    }
+};
+
+const updateResidents = async (userId, residents) => {
+    try {
+        if (!Array.isArray(residents)) {
+            throw new Error('Residents must be an array');
+        }
+
+        if (residents.length > 10) {
+            throw new Error('Maximum 10 residents');
+        }
+
+        const favoriteCount = residents.filter(r => r.favorite).length;
+        if (favoriteCount > 3) {
+            throw new Error('Maximum 3 favorites');
+        }
+
+        const names = residents.map(r => r.name);
+        const uniqueNames = [...new Set(names)];
+        if (uniqueNames.length !== names.length) {
+            throw new Error('Duplicate villager names are not allowed');
         }
 
         const user = await User.findById(userId);
@@ -208,33 +237,33 @@ const updateIslandResidents = async (userId, villagerIds) => {
             throw new Error('User not found');
         }
 
-        const removedVillagers = (user.island?.residents || []).filter(
-            id => !villagerIds.includes(id.toString())
-        );
-
         if (!user.island) {
-            user.island = { residents: [], favorites: [], updatedAt: new Date() };
+            user.island = { residents: [], likes: [], updatedAt: new Date() };
         }
 
-        user.island.residents = villagerIds;
-
-        if (removedVillagers.length > 0 && user.island.favorites) {
-            user.island.favorites = user.island.favorites.filter(
-                fav => !removedVillagers.some(removed => removed.toString() === fav.toString())
-            );
-        }
-
+        user.island.residents = residents;
         user.island.updatedAt = new Date();
         await user.save();
 
-        const populatedUser = await User.findById(userId).populate('island.residents island.favorites');
+        const Villager = require('../models/villager.model');
+        const residentNames = residents.map(r => r.name);
+        const villagers = await Villager.find({ 'name.en': { $in: residentNames } });
 
-        log(`Island residents updated for user ${userId}: ${villagerIds.length} residents`, 'info');
+        const residentsWithId = residents.map(r => {
+            const villager = villagers.find(v => v.name.en === r.name);
+            return {
+                id: villager?.id,
+                name: r.name,
+                favorite: r.favorite
+            };
+        });
+
+        log(`Island residents updated for user ${userId}: ${residents.length} residents, ${favoriteCount} favorites`, 'info');
 
         return {
-            residents: populatedUser.island.residents,
-            favorites: populatedUser.island.favorites,
-            updatedAt: populatedUser.island.updatedAt
+            residents: residentsWithId,
+            likes: user.island.likes || [],
+            updatedAt: user.island.updatedAt
         };
     } catch (error) {
         log(`Island residents update error for user ${userId}: ${error.message}`, 'error');
@@ -242,52 +271,61 @@ const updateIslandResidents = async (userId, villagerIds) => {
     }
 };
 
-const updateIslandFavorites = async (userId, villagerIds) => {
+
+const addLike = async (userId, villagerName) => {
     try {
-        if (!Array.isArray(villagerIds)) {
-            throw new Error('Villager IDs must be an array');
-        }
-
-        if (villagerIds.length > 3) {
-            throw new Error('You can have a maximum of 3 favorite villagers');
-        }
-
-        const uniqueIds = [...new Set(villagerIds)];
-        if (uniqueIds.length !== villagerIds.length) {
-            throw new Error('Duplicate villager IDs are not allowed');
-        }
-
         const user = await User.findById(userId);
         if (!user) {
             throw new Error('User not found');
         }
 
-        const residentIds = (user.island?.residents || []).map(id => id.toString());
-        const invalidFavorites = villagerIds.filter(id => !residentIds.includes(id.toString()));
-
-        if (invalidFavorites.length > 0) {
-            throw new Error('All favorites must be island residents');
-        }
-
         if (!user.island) {
-            user.island = { residents: [], favorites: [], updatedAt: new Date() };
+            user.island = { residents: [], likes: [], updatedAt: new Date() };
         }
 
-        user.island.favorites = villagerIds;
+        if (user.island.likes.includes(villagerName)) {
+            throw new Error('Villager already liked');
+        }
+
+        user.island.likes.push(villagerName);
         user.island.updatedAt = new Date();
         await user.save();
 
-        const populatedUser = await User.findById(userId).populate('island.residents island.favorites');
+        const Villager = require('../models/villager.model');
+        const villagers = await Villager.find({ 'name.en': { $in: user.island.likes } });
 
-        log(`Island favorites updated for user ${userId}: ${villagerIds.length} favorites`, 'info');
+        log(`Like added for user ${userId}: ${villagerName}`, 'info');
 
-        return {
-            residents: populatedUser.island.residents,
-            favorites: populatedUser.island.favorites,
-            updatedAt: populatedUser.island.updatedAt
-        };
+        return villagers;
     } catch (error) {
-        log(`Island favorites update error for user ${userId}: ${error.message}`, 'error');
+        log(`Add like error for user ${userId}: ${error.message}`, 'error');
+        throw error;
+    }
+};
+
+const removeLike = async (userId, villagerName) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        if (!user.island) {
+            user.island = { residents: [], likes: [], updatedAt: new Date() };
+        }
+
+        user.island.likes = user.island.likes.filter(name => name !== villagerName);
+        user.island.updatedAt = new Date();
+        await user.save();
+
+        const Villager = require('../models/villager.model');
+        const villagers = await Villager.find({ 'name.en': { $in: user.island.likes } });
+
+        log(`Like removed for user ${userId}: ${villagerName}`, 'info');
+
+        return villagers;
+    } catch (error) {
+        log(`Remove like error for user ${userId}: ${error.message}`, 'error');
         throw error;
     }
 };
@@ -299,7 +337,9 @@ module.exports = {
     deleteUser,
     getUser,
     updateProfile,
-    getIslandData,
-    updateIslandResidents,
-    updateIslandFavorites,
+    getIslandResidents,
+    getLikes,
+    updateResidents,
+    addLike,
+    removeLike,
 };

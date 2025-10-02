@@ -8,9 +8,11 @@ const {
     getUser,
     updateProfile,
     deleteUser,
-    getIslandData,
-    updateIslandResidents,
-    updateIslandFavorites,
+    getIslandResidents,
+    getLikes,
+    updateResidents,
+    addLike,
+    removeLike,
 } = require('../controllers/user.controller');
 const authUtil = require('../utils/auth.util');
 const { log } = require('../utils/logger.util');
@@ -132,8 +134,7 @@ router.delete('/:id',
     }
 );
 
-// Island routes
-router.get('/:id/island',
+router.get('/:id/island/residents',
     authMiddleware(['user:own:read']),
     async (req, res) => {
         try {
@@ -144,14 +145,43 @@ router.get('/:id/island',
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const islandData = await getIslandData(id);
+            const residents = await getIslandResidents(id);
 
             res.status(200).json({
-                message: 'Island data retrieved successfully',
-                island: islandData
+                message: 'Island residents retrieved successfully',
+                residents: residents
             });
         } catch (error) {
-            log(`Error retrieving island data: ${error.message}`, 'error');
+            log(`Error retrieving island residents: ${error.message}`, 'error');
+
+            if (error.message === 'User not found') {
+                return res.status(404).json({ message: error.message });
+            }
+
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+);
+
+router.get('/:id/like',
+    authMiddleware(['user:own:read']),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            const isOwnUser = req.user.id === id;
+
+            if (!isOwnUser) {
+                return res.status(403).json({ message: 'Access denied' });
+            }
+
+            const villagers = await getLikes(id);
+
+            res.status(200).json({
+                message: 'Likes retrieved successfully',
+                villagers: villagers
+            });
+        } catch (error) {
+            log(`Error retrieving likes: ${error.message}`, 'error');
 
             if (error.message === 'User not found') {
                 return res.status(404).json({ message: error.message });
@@ -164,12 +194,11 @@ router.get('/:id/island',
 
 router.put('/:id/island/residents',
     authMiddleware(['user:own:write']),
-    recentAuthMiddleware(10, ['user:own:write']),
     [
         check('residents').isArray().withMessage('Residents must be an array'),
         check('residents').custom((value) => {
             if (value.length > 10) {
-                throw new Error('Island can have a maximum of 10 residents');
+                throw new Error('Maximum 10 residents');
             }
             return true;
         })
@@ -189,7 +218,7 @@ router.put('/:id/island/residents',
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const islandData = await updateIslandResidents(id, residents);
+            const islandData = await updateResidents(id, residents);
 
             res.status(200).json({
                 message: 'Island residents updated successfully',
@@ -201,7 +230,7 @@ router.put('/:id/island/residents',
             if (error.message === 'User not found') {
                 return res.status(404).json({ message: error.message });
             }
-            if (error.message.includes('maximum') || error.message.includes('invalid') || error.message.includes('Duplicate')) {
+            if (error.message.includes('Maximum') || error.message.includes('Duplicate')) {
                 return res.status(400).json({ message: error.message });
             }
 
@@ -210,17 +239,10 @@ router.put('/:id/island/residents',
     }
 );
 
-router.put('/:id/island/favorites',
+router.post('/:id/like',
     authMiddleware(['user:own:write']),
-    recentAuthMiddleware(10, ['user:own:write']),
     [
-        check('favorites').isArray().withMessage('Favorites must be an array'),
-        check('favorites').custom((value) => {
-            if (value.length > 3) {
-                throw new Error('You can have a maximum of 3 favorite villagers');
-            }
-            return true;
-        })
+        check('villagerName').isString().withMessage('Villager name must be a string')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);
@@ -230,27 +252,56 @@ router.put('/:id/island/favorites',
 
         try {
             const { id } = req.params;
-            const { favorites } = req.body;
+            const { villagerName } = req.body;
             const isOwnUser = req.user.id === id;
 
             if (!isOwnUser) {
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const islandData = await updateIslandFavorites(id, favorites);
+            const villagers = await addLike(id, villagerName);
 
             res.status(200).json({
-                message: 'Island favorites updated successfully',
-                island: islandData
+                message: 'Villager added to likes',
+                villagers: villagers
             });
         } catch (error) {
-            log(`Error updating island favorites: ${error.message}`, 'error');
+            log(`Error adding like: ${error.message}`, 'error');
 
             if (error.message === 'User not found') {
                 return res.status(404).json({ message: error.message });
             }
-            if (error.message.includes('maximum') || error.message.includes('residents') || error.message.includes('Duplicate')) {
+            if (error.message.includes('already liked')) {
                 return res.status(400).json({ message: error.message });
+            }
+
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+);
+
+router.delete('/:id/like/:villagerName',
+    authMiddleware(['user:own:write']),
+    async (req, res) => {
+        try {
+            const { id, villagerName } = req.params;
+            const isOwnUser = req.user.id === id;
+
+            if (!isOwnUser) {
+                return res.status(403).json({ message: 'Access denied' });
+            }
+
+            const villagers = await removeLike(id, villagerName);
+
+            res.status(200).json({
+                message: 'Villager removed from likes',
+                villagers: villagers
+            });
+        } catch (error) {
+            log(`Error removing like: ${error.message}`, 'error');
+
+            if (error.message === 'User not found') {
+                return res.status(404).json({ message: error.message });
             }
 
             res.status(500).json({ message: 'Internal server error' });

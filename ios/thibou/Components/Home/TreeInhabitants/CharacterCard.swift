@@ -34,16 +34,24 @@ struct CharacterCard: View {
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showInfo) {
-            CharacterInfoCard(character: character, onViewDetails: {
-                showInfo = false
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    NotificationCenter.default.post(
-                        name: Notification.Name("NavigateToVillagerDetail"),
-                        object: character
-                    )
+            IslandCharacterInfoCard(
+                character: character,
+                onViewDetails: {
+                    showInfo = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        NotificationCenter.default.post(
+                            name: Notification.Name("NavigateToVillagerDetail"),
+                            object: character
+                        )
+                    }
+                },
+                onManageVillagers: {
+                    showInfo = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        NotificationCenter.default.post(name: Notification.Name("NavigateToIslandTab"), object: nil)
+                    }
                 }
-            })
+            )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }

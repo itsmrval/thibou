@@ -36,89 +36,94 @@ struct SettingsView: View {
 
                     if !showEmailLogin && !showLanguageSelector && !showChangePassword && !showChangeEmail && !showChangeUsername {
                         VStack(spacing: 0) {
-                            VStack(spacing: 12) {
-                                Image("TopBar/MarieLogo")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 60, height: 60)
-                                    .foregroundColor(ThibouTheme.Colors.leafGreen)
-
-                                Text(LocalizedKey.parameters)
-                                    .font(ThibouTheme.Typography.mediumTitle)
-                                    .foregroundColor(ThibouTheme.Colors.leafGreen)
-
-                                if let errorMessage = errorMessage {
-                                    HStack {
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundColor(.red)
-                                            .font(.system(size: 14))
-
-                                        Text(errorMessage)
-                                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                                            .foregroundColor(.red)
-                                            .multilineTextAlignment(.leading)
-
-                                        Spacer()
-
-                                        Button(action: {
-                                            withAnimation(.easeOut(duration: 0.2)) {
-                                                self.errorMessage = nil
-                                            }
-                                        }) {
-                                            Image(systemName: "xmark")
-                                                .foregroundColor(.red.opacity(0.7))
-                                                .font(.system(size: 12, weight: .medium))
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(.red.opacity(0.1))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(.red.opacity(0.3), lineWidth: 1)
-                                            )
-                                    )
-                                    .padding(.horizontal, 24)
-                                    .transition(.asymmetric(
-                                        insertion: .scale(scale: 0.8).combined(with: .opacity),
-                                        removal: .scale(scale: 0.8).combined(with: .opacity)
-                                    ))
-                                }
-                            }
-                            .padding(.top, 20)
-                            .padding(.bottom, 32)
-
                             ScrollView(.vertical, showsIndicators: false) {
                                 VStack(spacing: 24) {
-                                    VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Text(LocalizedKey.general)
-                                            .font(ThibouTheme.Typography.headline)
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                    }
+                                    VStack(spacing: 12) {
+                                        Image("TopBar/MarieLogo")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 60, height: 60)
+                                            .foregroundColor(ThibouTheme.Colors.leafGreen)
 
-                                    SettingsButton(
-                                        title: LocalizedKey.language.localized,
-                                        icon: "globe",
-                                        color: ThibouTheme.Colors.skyBlue,
-                                        subtitle: languageManager.selectedLanguage.flag + " " + languageManager.selectedLanguage.displayName
-                                    ) {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            showLanguageSelector = true
+                                        Text(LocalizedKey.parameters)
+                                            .font(ThibouTheme.Typography.mediumTitle)
+                                            .foregroundColor(ThibouTheme.Colors.leafGreen)
+
+                                        Text(LocalizedKey.parametersSubtext)
+                                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                                            .foregroundColor(.secondary)
+                                            .multilineTextAlignment(.center)
+
+                                        if let errorMessage = errorMessage {
+                                            HStack {
+                                                Image(systemName: "exclamationmark.triangle.fill")
+                                                    .foregroundColor(.red)
+                                                    .font(.system(size: 14))
+
+                                                Text(errorMessage)
+                                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                                    .foregroundColor(.red)
+                                                    .multilineTextAlignment(.leading)
+
+                                                Spacer()
+
+                                                Button(action: {
+                                                    withAnimation(.easeOut(duration: 0.2)) {
+                                                        self.errorMessage = nil
+                                                    }
+                                                }) {
+                                                    Image(systemName: "xmark")
+                                                        .foregroundColor(.red.opacity(0.7))
+                                                        .font(.system(size: 12, weight: .medium))
+                                                }
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .fill(.red.opacity(0.1))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 10)
+                                                            .stroke(.red.opacity(0.3), lineWidth: 1)
+                                                    )
+                                            )
+                                            .padding(.horizontal, 24)
+                                            .transition(.asymmetric(
+                                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                                removal: .scale(scale: 0.8).combined(with: .opacity)
+                                            ))
                                         }
                                     }
-                                }
+                                    .padding(.top, 20)
 
                                     VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Text(LocalizedKey.account)
-                                            .font(ThibouTheme.Typography.headline)
-                                            .foregroundColor(.primary)
-                                        Spacer()
+                                        HStack {
+                                            Text(LocalizedKey.general)
+                                                .font(ThibouTheme.Typography.headline)
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                        }
+
+                                        SettingsButton(
+                                            title: LocalizedKey.language.localized,
+                                            icon: "globe",
+                                            color: ThibouTheme.Colors.skyBlue,
+                                            subtitle: languageManager.selectedLanguage.flag + " " + languageManager.selectedLanguage.displayName
+                                        ) {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                showLanguageSelector = true
+                                            }
+                                        }
                                     }
+                                    .padding(.horizontal, 24)
+
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        HStack {
+                                            Text(LocalizedKey.account)
+                                                .font(ThibouTheme.Typography.headline)
+                                                .foregroundColor(.primary)
+                                            Spacer()
+                                        }
 
                                     if authManager.isLoggedIn {
                                         if let user = authManager.currentUser {
@@ -232,30 +237,27 @@ struct SettingsView: View {
                                         }
                                     }
                                 }
-                                }
                                 .padding(.horizontal, 24)
-                                .padding(.bottom, 60)
+
+                                    VStack(spacing: 4) {
+                                        Text("Thibou")
+                                            .font(ThibouTheme.Typography.subheadline)
+                                            .foregroundColor(.primary)
+
+                                        if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                                           let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+                                            Text("\(LocalizedKey.version.localized) \(version) (\(build))")
+                                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                                .foregroundColor(.secondary)
+                                        } else {
+                                            Text("\(LocalizedKey.version.localized) 1.0")
+                                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .padding(.bottom, 60)
+                                }
                             }
-
-                        Spacer()
-
-                        VStack(spacing: 4) {
-                            Text("Thibou")
-                                .font(ThibouTheme.Typography.subheadline)
-                                .foregroundColor(.primary)
-
-                            if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                               let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
-                                Text("\(LocalizedKey.version.localized) \(version) (\(build))")
-                                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("\(LocalizedKey.version.localized) 1.0")
-                                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.bottom, 20)
                         }
                     } else if showLanguageSelector {
                         LanguageSelectorView(

@@ -3,7 +3,6 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var villagerService = VillagerService.shared
     @StateObject private var localizationManager = LocalizationManager.shared
-    @State private var blinkOpacity = 1.0
 
     var body: some View {
         ScrollView {
@@ -12,25 +11,27 @@ struct HomeView: View {
                 NotificationCenter.default.post(name: Notification.Name("NavigateToIslandTab"), object: nil)
             }) {
                 HStack {
-                    Text(LocalizedKey.myInhabitants)
-                        .font(ThibouTheme.Typography.body)
-                        .foregroundColor(.primary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.3.fill")
+                                .foregroundColor(ThibouTheme.Colors.leafGreen)
+                                .font(.system(size: 16))
+
+                            Text(LocalizedKey.myInhabitants)
+                                .font(ThibouTheme.Typography.headline)
+                                .foregroundColor(.primary)
+                        }
+
+                        Text(LocalizedKey.myInhabitantsSubtext)
+                            .font(ThibouTheme.Typography.caption)
+                            .foregroundColor(.secondary)
+                    }
 
                     Spacer()
 
-                    Image(systemName: "circle.fill")
-                        .font(.system(size: 8))
-                        .foregroundColor(ThibouTheme.Colors.skyBlue)
-                        .opacity(blinkOpacity)
-                        .onAppear {
-                            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                                blinkOpacity = 0.3
-                            }
-                        }
-
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.secondary)
+                        .font(.system(size: 14, weight: .semibold))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
@@ -45,15 +46,23 @@ struct HomeView: View {
             }
 
             HStack {
-                Text(LocalizedKey.shortcuts)
-                    .font(ThibouTheme.Typography.body)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bolt.fill")
+                            .foregroundColor(ThibouTheme.Colors.skyBlue)
+                            .font(.system(size: 16))
+
+                        Text(LocalizedKey.shortcuts)
+                            .font(ThibouTheme.Typography.headline)
+                            .foregroundColor(.primary)
+                    }
+
+                    Text(LocalizedKey.shortcutsSubtext)
+                        .font(ThibouTheme.Typography.caption)
+                        .foregroundColor(.secondary)
+                }
 
                 Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)

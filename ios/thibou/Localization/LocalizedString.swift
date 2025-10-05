@@ -199,6 +199,14 @@ enum LocalizedKey: String, CaseIterable {
     case flickPrice = "Bug.flick_price"
     case bugBasicInformation = "Bug.basic_information"
     case bugTranslations = "Bug.translations"
+    case museum_room = "Fossil.museum_room"
+    case parts_count = "Fossil.parts_count"
+    case complete_set_value = "Fossil.complete_set_value"
+    case width = "Fossil.width"
+    case length = "Fossil.length"
+    case total_value = "Fossil.total_value"
+    case parts = "Fossil.parts"
+    case room = "Fossil.room"
 
     static func speciesName(_ species: String) -> String {
         return LocalizationManager.shared.localizedString(for: "species_names.\(species)", component: "Villager", fallback: species.capitalized)

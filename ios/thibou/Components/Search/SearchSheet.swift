@@ -8,6 +8,7 @@ struct SearchSheet: View {
     @StateObject private var villagerService = VillagerService.shared
     @StateObject private var fishService = FishService.shared
     @StateObject private var bugService = BugService.shared
+    @StateObject private var fossilService = FossilService.shared
     @State private var searchResults: SearchResults = SearchResults()
     @State private var isSearching = false
     @State private var searchTask: Task<Void, Never>?
@@ -15,6 +16,7 @@ struct SearchSheet: View {
     @State private var suggestedVillagers: [VillagerSummary] = []
     @State private var suggestedFish: [FishSummary] = []
     @State private var suggestedBugs: [BugSummary] = []
+    @State private var suggestedFossils: [FossilSummary] = []
 
     @State private var selectedVillager: VillagerSummary?
     @State private var showVillagerDetail = false
@@ -24,6 +26,9 @@ struct SearchSheet: View {
 
     @State private var selectedBug: BugSummary?
     @State private var showBugDetail = false
+
+    @State private var selectedFossil: FossilSummary?
+    @State private var showFossilDetail = false
 
     var body: some View {
         NavigationStack {
@@ -38,6 +43,7 @@ struct SearchSheet: View {
                             suggestedVillagers: suggestedVillagers,
                             suggestedFish: suggestedFish,
                             suggestedBugs: suggestedBugs,
+                            suggestedFossils: suggestedFossils,
                             onVillagerTap: { villager in
                                 selectedVillager = villager
                                 showVillagerDetail = true
@@ -49,6 +55,10 @@ struct SearchSheet: View {
                             onBugTap: { bug in
                                 selectedBug = bug
                                 showBugDetail = true
+                            },
+                            onFossilTap: { fossil in
+                                selectedFossil = fossil
+                                showFossilDetail = true
                             }
                         )
                         .padding(.top, 20)
@@ -67,6 +77,10 @@ struct SearchSheet: View {
                             onBugTap: { bug in
                                 selectedBug = bug
                                 showBugDetail = true
+                            },
+                            onFossilTap: { fossil in
+                                selectedFossil = fossil
+                                showFossilDetail = true
                             }
                         )
                         .padding(.top, 20)
@@ -227,6 +241,36 @@ struct SearchSheet: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: $showFossilDetail) {
+            if let fossil = selectedFossil {
+                let allSearchFossils = searchText.isEmpty ?
+                    suggestedFossils.map { $0.toFossil() } :
+                    searchResults.fossils.map { $0.toFossil() }
+
+                NavigationStack {
+                    FossilDetailView(
+                        fossil: fossil.toFossil(),
+                        allFossils: allSearchFossils,
+                        onToggleFavorite: { _ in },
+                        onShare: { _ in }
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                showFossilDetail = false
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onAppear {
             loadSuggestions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -252,10 +296,15 @@ struct SearchSheet: View {
                 await bugService.fetchBugSummaries()
             }
 
+            if fossilService.fossilSummaries.isEmpty {
+                await fossilService.fetchFossilSummaries()
+            }
+
             await MainActor.run {
                 suggestedVillagers = Array(villagerService.villagerSummaries.shuffled().prefix(3))
                 suggestedFish = Array(fishService.fishSummaries.shuffled().prefix(2))
-                suggestedBugs = Array(bugService.bugSummaries.shuffled().prefix(2))
+                suggestedBugs = Array(bugService.bugSummaries.shuffled().prefix(1))
+                suggestedFossils = Array(fossilService.fossilSummaries.shuffled().prefix(1))
             }
         }
     }
@@ -292,12 +341,21 @@ struct SearchSheet: View {
                 bug.rarity.localizedCaseInsensitiveContains(query)
             }
 
+            let fossilResults = fossilService.fossilSummaries.filter { fossil in
+                fossil.displayName.localizedCaseInsensitiveContains(query) ||
+                fossil.parts.contains { part in
+                    part.full_name.localizedCaseInsensitiveContains(query) ||
+                    part.name.localizedCaseInsensitiveContains(query)
+                }
+            }
+
             await MainActor.run {
                 if !Task.isCancelled {
                     searchResults = SearchResults(
                         villagers: Array(villagerResults.prefix(4)),
                         fish: Array(fishResults.prefix(3)),
-                        bugs: Array(bugResults.prefix(3))
+                        bugs: Array(bugResults.prefix(3)),
+                        fossils: Array(fossilResults.prefix(3))
                     )
                     isSearching = false
                 }
@@ -310,9 +368,10 @@ struct SearchResults {
     var villagers: [VillagerSummary] = []
     var fish: [FishSummary] = []
     var bugs: [BugSummary] = []
+    var fossils: [FossilSummary] = []
 
     var isEmpty: Bool {
-        villagers.isEmpty && fish.isEmpty && bugs.isEmpty
+        villagers.isEmpty && fish.isEmpty && bugs.isEmpty && fossils.isEmpty
     }
 }
 
@@ -320,9 +379,11 @@ struct SuggestionsView: View {
     let suggestedVillagers: [VillagerSummary]
     let suggestedFish: [FishSummary]
     let suggestedBugs: [BugSummary]
+    let suggestedFossils: [FossilSummary]
     let onVillagerTap: (VillagerSummary) -> Void
     let onFishTap: (FishSummary) -> Void
     let onBugTap: (BugSummary) -> Void
+    let onFossilTap: (FossilSummary) -> Void
 
     @StateObject private var languageManager = LanguageManager.shared
 
@@ -346,7 +407,7 @@ struct SuggestionsView: View {
                     }
                 }
 
-                if !suggestedFish.isEmpty || !suggestedBugs.isEmpty {
+                if !suggestedFish.isEmpty || !suggestedBugs.isEmpty || !suggestedFossils.isEmpty {
                     VStack(alignment: .leading, spacing: 16) {
                         LazyVGrid(columns: [
                             GridItem(.flexible(), spacing: 8),
@@ -360,9 +421,15 @@ struct SuggestionsView: View {
                                 }
                             }
 
-                            ForEach(Array(suggestedBugs.prefix(2))) { bug in
+                            ForEach(Array(suggestedBugs.prefix(1))) { bug in
                                 BugSuggestionCard(bug: bug) {
                                     onBugTap(bug)
+                                }
+                            }
+
+                            ForEach(Array(suggestedFossils.prefix(1))) { fossil in
+                                FossilSuggestionCard(fossil: fossil) {
+                                    onFossilTap(fossil)
                                 }
                             }
                         }
@@ -384,6 +451,7 @@ struct SearchResultsView: View {
     let onVillagerTap: (VillagerSummary) -> Void
     let onFishTap: (FishSummary) -> Void
     let onBugTap: (BugSummary) -> Void
+    let onFossilTap: (FossilSummary) -> Void
 
     @StateObject private var languageManager = LanguageManager.shared
 
@@ -456,6 +524,24 @@ struct SearchResultsView: View {
                                 ForEach(searchResults.bugs) { bug in
                                     BugSearchCard(bug: bug) {
                                         onBugTap(bug)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+
+                    if !searchResults.fossils.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(LocalizedKey.fossils.localized)
+                                .font(ThibouTheme.Typography.title)
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 20)
+
+                            LazyVStack(spacing: 12) {
+                                ForEach(searchResults.fossils) { fossil in
+                                    FossilSearchCard(fossil: fossil) {
+                                        onFossilTap(fossil)
                                     }
                                 }
                             }
@@ -804,6 +890,127 @@ struct BugSearchCard: View {
                                 .scaledToFit()
                                 .frame(width: 16, height: 16)
                         }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(16)
+            .background(.regularMaterial.opacity(0.8), in: RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct FossilSuggestionCard: View {
+    let fossil: FossilSummary
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap()
+        }) {
+            VStack(spacing: 8) {
+                if let firstPart = fossil.parts.first {
+                    FossilImageView(
+                        fossilId: fossil.id,
+                        partName: firstPart.name,
+                        width: 50,
+                        height: 50,
+                        cornerRadius: 12,
+                        placeholderColor: fossil.titleColorValue
+                    )
+                    .shadow(color: fossil.titleColorValue.opacity(0.2), radius: 6, x: 0, y: 3)
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(fossil.titleColorValue.opacity(0.2))
+                        .frame(width: 50, height: 50)
+                }
+
+                VStack(spacing: 2) {
+                    Text(fossil.displayName)
+                        .font(ThibouTheme.Typography.caption)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    Text(fossil.displayRoom)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial.opacity(0.8), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(.white.opacity(0.1), lineWidth: 0.5)
+            )
+            .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct FossilSearchCard: View {
+    let fossil: FossilSummary
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap()
+        }) {
+            HStack(spacing: 16) {
+                if let firstPart = fossil.parts.first {
+                    FossilImageView(
+                        fossilId: fossil.id,
+                        partName: firstPart.name,
+                        width: 70,
+                        height: 70,
+                        cornerRadius: 18,
+                        placeholderColor: fossil.titleColorValue
+                    )
+                    .shadow(color: fossil.titleColorValue.opacity(0.3), radius: 8, x: 0, y: 4)
+                } else {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(fossil.titleColorValue.opacity(0.2))
+                        .frame(width: 70, height: 70)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(fossil.displayName)
+                        .font(ThibouTheme.Typography.headline)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Text("\(fossil.parts_count)")
+                                .font(ThibouTheme.Typography.callout)
+                                .foregroundColor(.secondary)
+
+                            Text(LocalizedKey.parts_count.localized)
+                                .font(ThibouTheme.Typography.callout)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Text("•")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+
+                        Text(fossil.displayRoom)
+                            .font(ThibouTheme.Typography.callout)
+                            .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

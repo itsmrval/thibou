@@ -4,7 +4,7 @@ import Combine
 class APIManager: ObservableObject {
     static let shared = APIManager()
 
-    private let baseURL = "https://api.thibou.valentinp.fr"
+    private let baseURL = "http://localhost:3010"
 
     private init() {}
 

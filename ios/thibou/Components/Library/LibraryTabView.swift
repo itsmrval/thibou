@@ -39,6 +39,7 @@ struct LibraryTabView: View {
     @State private var favoriteVillagers: Set<String> = []
     @State private var favoriteFishes: Set<String> = []
     @State private var favoriteBugs: Set<String> = []
+    @State private var favoriteFossils: Set<String> = []
 
     private var categories: [LibraryCategory] { LibraryCategory.allCases }
 
@@ -107,6 +108,21 @@ struct LibraryTabView: View {
                 shareBug(bug)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ToggleFavoriteFossil"))) { notification in
+            if let fossil = notification.object as? Fossil {
+                if favoriteFossils.contains(fossil.id) {
+                    favoriteFossils.remove(fossil.id)
+                } else {
+                    favoriteFossils.insert(fossil.id)
+                }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShareFossil"))) { notification in
+            if let fossil = notification.object as? Fossil {
+                shareFossil(fossil)
+            }
+        }
     }
 
     private func shareVillager(_ villager: Villager) {
@@ -165,6 +181,25 @@ struct LibraryTabView: View {
 
         window.rootViewController?.present(activityController, animated: true)
     }
+
+    private func shareFossil(_ fossil: Fossil) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else { return }
+
+        let shareText = LocalizedKey.sharingTextTodo.localized
+        let activityController = UIActivityViewController(
+            activityItems: [shareText],
+            applicationActivities: nil
+        )
+
+        if let popover = activityController.popoverPresentationController {
+            popover.sourceView = window
+            popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        window.rootViewController?.present(activityController, animated: true)
+    }
 }
 struct LibraryContentView: View {
     let category: LibraryCategory
@@ -178,7 +213,7 @@ struct LibraryContentView: View {
         case .insectes:
             BugContentView()
         case .fossiles:
-            ComingSoonView(category: .fossiles)
+            FossilContentView()
         case .vetements:
             ComingSoonView(category: .vetements)
         case .objets:
@@ -1189,6 +1224,222 @@ struct LibraryBugCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
         )
+        .onTapGesture {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+    }
+}
+
+struct FossilContentView: View {
+    @StateObject private var fossilService = FossilService.shared
+
+    private var sortedFossils: [FossilSummary] {
+        let grouped = Dictionary(grouping: fossilService.fossilSummaries) { $0.room }
+        let sortedRooms = grouped.keys.sorted()
+
+        var result: [FossilSummary] = []
+        for room in sortedRooms {
+            let fossilsInRoom = grouped[room] ?? []
+            let sortedFossilsInRoom = fossilsInRoom.sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+            result.append(contentsOf: sortedFossilsInRoom)
+        }
+        return result
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                Text(LocalizedKey.fossils)
+                    .font(ThibouTheme.Typography.body)
+                    .foregroundColor(.secondary)
+
+                Text("(\(fossilService.fossilSummaries.count))")
+                    .font(ThibouTheme.Typography.body)
+                    .foregroundColor(.secondary.opacity(0.7))
+
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if fossilService.fossilSummaries.isEmpty {
+                        VStack(spacing: 16) {
+                            if fossilService.isLoading && fossilService.fossilSummaries.isEmpty {
+                                ProgressView(LocalizedKey.loading.localized)
+                                    .foregroundColor(.secondary)
+                            } else if let error = fossilService.error {
+                                VStack(spacing: 16) {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.orange)
+
+                                    Text(LocalizedKey.errorOccurred)
+                                        .font(ThibouTheme.Typography.body)
+                                        .foregroundColor(.primary)
+
+                                    Text(error)
+                                        .font(.system(.caption, design: .monospaced))
+                                        .foregroundColor(.secondary)
+                                        .padding(12)
+                                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
+
+                                    Button(LocalizedKey.retry.localized) {
+                                        Task { await fossilService.fetchFossilSummaries() }
+                                    }
+                                    .foregroundColor(.blue)
+                                }
+                            } else {
+                                Image("fossil")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 80, height: 80)
+                                    .foregroundColor(.secondary.opacity(0.6))
+
+                                Text(LocalizedKey.noFossilsFound.localized)
+                                    .font(ThibouTheme.Typography.body)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 100)
+                    } else {
+                        LazyVStack(spacing: 6) {
+                            ForEach(sortedFossils) { fossil in
+                                LibraryFossilCard(fossil: fossil)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                    }
+                }
+            }
+            .refreshable {
+                await refreshFossilSummaries()
+            }
+        }
+        .task {
+            if fossilService.fossilSummaries.isEmpty {
+                await fossilService.fetchFossilSummaries()
+            }
+        }
+    }
+
+    private func refreshFossilSummaries() async {
+        fossilService.clearAllCaches()
+        await fossilService.fetchFossilSummaries()
+    }
+}
+
+struct LibraryFossilCard: View {
+    let fossil: FossilSummary
+
+    var body: some View {
+        NavigationLink(destination: FossilDetailView(
+            fossil: fossil.toFossil(),
+            allFossils: FossilService.shared.fossilSummaries.map { $0.toFossil() },
+            onToggleFavorite: { fossil in
+                NotificationCenter.default.post(
+                    name: Notification.Name("ToggleFavoriteFossil"),
+                    object: fossil
+                )
+            },
+            onShare: { fossil in
+                NotificationCenter.default.post(
+                    name: Notification.Name("ShareFossil"),
+                    object: fossil
+                )
+            }
+        )) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(fossil.displayName)
+                    .font(ThibouTheme.Typography.boldCallout)
+                    .foregroundColor(fossil.titleColorValue)
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            Text("\(fossil.parts_count)")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+
+                            Text(LocalizedKey.parts_count.localized)
+                                .font(.system(size: 12, weight: .regular, design: .rounded))
+                                .foregroundColor(.secondary)
+
+                            Text("•")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(.secondary.opacity(0.5))
+
+                            Text("\(fossil.total_price)")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+
+                            Image("bells_single")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                        }
+
+                        Text(fossil.displayRoom)
+                            .font(ThibouTheme.Typography.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(fossil.titleColorValue.opacity(0.2))
+                            )
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        ForEach(Array(fossil.parts.prefix(2).enumerated()), id: \.offset) { index, part in
+                            FossilImageView(
+                                fossilId: fossil.id,
+                                partName: part.name,
+                                width: 40,
+                                height: 40,
+                                cornerRadius: 8,
+                                placeholderColor: fossil.titleColorValue
+                            )
+                        }
+
+                        if fossil.parts.count > 2 {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(fossil.titleColorValue.opacity(0.2))
+                                .frame(width: 40, height: 40)
+                                .overlay(
+                                    Text("+\(fossil.parts.count - 2)")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(fossil.titleColorValue)
+                                )
+                        }
+                    }
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(
+                        color: fossil.titleColorValue.opacity(0.2),
+                        radius: 8,
+                        x: 0,
+                        y: 4
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
         .onTapGesture {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }

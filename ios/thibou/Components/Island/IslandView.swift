@@ -225,7 +225,6 @@ struct IslandView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle(LocalizedKey.myIslandTitle.localized)
         .background(ThibouTheme.Colors.backgroundGradient)
         .sheet(isPresented: $showLoginSheet) {
             SettingsView(authManager: authManager) {

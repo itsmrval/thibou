@@ -410,7 +410,7 @@ class BugPopulator(BasePopulator):
 
     def run(self):
         try:
-            print("Starting Global Bugs Population Process...")
+            print("Starting Bugs population...")
             print(f"Configuration:")
             print(f"  - Avoid translations: {self.avoid_translations}")
             print(f"  - API Base URL: {self.api_base_url}")
@@ -425,7 +425,7 @@ class BugPopulator(BasePopulator):
             self.enhance_with_name_translations()
 
             print(f"\n{'='*50}")
-            print("GLOBAL BUGS PROCESS COMPLETED SUCCESSFULLY!")
+            print("BUGS PROCESS COMPLETED SUCCESSFULLY!")
             print(f"{'='*50}")
 
         except Exception as e:

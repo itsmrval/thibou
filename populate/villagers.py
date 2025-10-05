@@ -544,7 +544,7 @@ class VillagersGlobalPopulator(BasePopulator):
     def run(self):
         """Run the complete villagers workflow"""
         try:
-            print("Starting Global Villagers Population Process...")
+            print("Starting Villagers population...")
             print(f"Configuration:")
             print(f"  - Avoid enhancements: {self.avoid_enhancements}")
             print(f"  - Avoid translations: {self.avoid_translations}")
@@ -565,7 +565,7 @@ class VillagersGlobalPopulator(BasePopulator):
             self.enhance_with_popularity_ranks()
 
             print(f"\n{'='*50}")
-            print("GLOBAL VILLAGERS PROCESS COMPLETED SUCCESSFULLY!")
+            print("VILLAGERS PROCESS COMPLETED SUCCESSFULLY!")
             print(f"{'='*50}")
 
         except Exception as e:

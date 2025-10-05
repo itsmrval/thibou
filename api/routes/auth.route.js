@@ -83,10 +83,7 @@ router.post('/system', ratelimitMiddleware(5), [
         
         return res.status(200).json({
             message: 'System token generated successfully',
-            token,
-            tokenType: 'system',
-            expiresIn: '1h',
-            scopes: ['villager:admin', 'bug:admin', 'fish:admin']
+            token
         });
     } catch (error) {
         log(`System authentication error: ${error.message}`, 'error');

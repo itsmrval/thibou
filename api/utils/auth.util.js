@@ -2,7 +2,7 @@ const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const defaultAdminScopes = ['user:admin', 'sso:admin', 'villager:admin', 'villager:write', 'villager:read', 'fish:admin', 'bug:admin', 'bug:write'];
+const defaultAdminScopes = ['user:admin', 'sso:admin', 'villager:admin', 'villager:write', 'villager:read', 'fish:admin', 'bug:admin', 'fossil:admin'];
 const defaultUserScopes = ['user:own:read', 'user:own:write', 'user:read', 'sso:own:read', 'sso:own:write', 'villager:read'];
 
 
@@ -66,7 +66,7 @@ const isRecentToken = (tokenPayload, maxAgeMinutes = 10) => {
 }
 
 const generateSystemToken = () => {
-    const systemScopes = ['villager:admin', 'bug:admin', 'fish:admin'];
+    const systemScopes = ['villager:admin', 'bug:admin', 'fish:admin', 'fossil:admin'];
     const payload = {
         user: {
             id: 'system-token',

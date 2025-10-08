@@ -51,7 +51,17 @@ const UserSchema = new mongoose.Schema({
                 default: false
             }
         }],
-        likes: [String],
+        likes: [{
+            name: {
+                type: String,
+                required: true
+            },
+            category: {
+                type: String,
+                required: true,
+                enum: ['villagers', 'fish', 'bugs', 'fossils']
+            }
+        }],
         updatedAt: {
             type: Date,
             default: Date.now

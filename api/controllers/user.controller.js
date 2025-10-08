@@ -193,19 +193,20 @@ const getIslandResidents = async (userId) => {
     }
 };
 
-const getLikes = async (userId) => {
+const getLikes = async (userId, category = null) => {
     try {
         const user = await User.findById(userId);
         if (!user) {
             throw new Error('User not found');
         }
 
-        const Villager = require('../models/villager.model');
-        const likeNames = user.island?.likes || [];
+        let likes = user.island?.likes || [];
 
-        const villagers = await Villager.find({ 'name.en': { $in: likeNames } });
+        if (category) {
+            likes = likes.filter(like => like.category === category);
+        }
 
-        return villagers;
+        return likes;
     } catch (error) {
         throw error;
     }
@@ -272,7 +273,7 @@ const updateResidents = async (userId, residents) => {
 };
 
 
-const addLike = async (userId, villagerName) => {
+const addLike = async (userId, name, category) => {
     try {
         const user = await User.findById(userId);
         if (!user) {
@@ -283,27 +284,25 @@ const addLike = async (userId, villagerName) => {
             user.island = { residents: [], likes: [], updatedAt: new Date() };
         }
 
-        if (user.island.likes.includes(villagerName)) {
-            throw new Error('Villager already liked');
+        const exists = user.island.likes.some(like => like.name === name && like.category === category);
+        if (exists) {
+            throw new Error('Item already liked');
         }
 
-        user.island.likes.push(villagerName);
+        user.island.likes.push({ name, category });
         user.island.updatedAt = new Date();
         await user.save();
 
-        const Villager = require('../models/villager.model');
-        const villagers = await Villager.find({ 'name.en': { $in: user.island.likes } });
+        log(`Like added for user ${userId}: ${category}/${name}`, 'info');
 
-        log(`Like added for user ${userId}: ${villagerName}`, 'info');
-
-        return villagers;
+        return user.island.likes;
     } catch (error) {
         log(`Add like error for user ${userId}: ${error.message}`, 'error');
         throw error;
     }
 };
 
-const removeLike = async (userId, villagerName) => {
+const removeLike = async (userId, name, category) => {
     try {
         const user = await User.findById(userId);
         if (!user) {
@@ -314,16 +313,13 @@ const removeLike = async (userId, villagerName) => {
             user.island = { residents: [], likes: [], updatedAt: new Date() };
         }
 
-        user.island.likes = user.island.likes.filter(name => name !== villagerName);
+        user.island.likes = user.island.likes.filter(like => !(like.name === name && like.category === category));
         user.island.updatedAt = new Date();
         await user.save();
 
-        const Villager = require('../models/villager.model');
-        const villagers = await Villager.find({ 'name.en': { $in: user.island.likes } });
+        log(`Like removed for user ${userId}: ${category}/${name}`, 'info');
 
-        log(`Like removed for user ${userId}: ${villagerName}`, 'info');
-
-        return villagers;
+        return user.island.likes;
     } catch (error) {
         log(`Remove like error for user ${userId}: ${error.message}`, 'error');
         throw error;

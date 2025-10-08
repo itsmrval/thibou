@@ -168,17 +168,18 @@ router.get('/:id/like',
     async (req, res) => {
         try {
             const { id } = req.params;
+            const { category } = req.query;
             const isOwnUser = req.user.id === id;
 
             if (!isOwnUser) {
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const villagers = await getLikes(id);
+            const likes = await getLikes(id, category);
 
             res.status(200).json({
                 message: 'Likes retrieved successfully',
-                villagers: villagers
+                likes: likes
             });
         } catch (error) {
             log(`Error retrieving likes: ${error.message}`, 'error');
@@ -242,7 +243,8 @@ router.put('/:id/island/residents',
 router.post('/:id/like',
     authMiddleware(['user:own:write']),
     [
-        check('villagerName').isString().withMessage('Villager name must be a string')
+        check('name').isString().withMessage('Name must be a string'),
+        check('category').isIn(['villagers', 'fish', 'bugs', 'fossils']).withMessage('Invalid category')
     ],
     async (req, res) => {
         const bodyError = validationResult(req);
@@ -252,18 +254,18 @@ router.post('/:id/like',
 
         try {
             const { id } = req.params;
-            const { villagerName } = req.body;
+            const { name, category } = req.body;
             const isOwnUser = req.user.id === id;
 
             if (!isOwnUser) {
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const villagers = await addLike(id, villagerName);
+            const likes = await addLike(id, name, category);
 
             res.status(200).json({
-                message: 'Villager added to likes',
-                villagers: villagers
+                message: 'Item added to likes',
+                likes: likes
             });
         } catch (error) {
             log(`Error adding like: ${error.message}`, 'error');
@@ -280,22 +282,32 @@ router.post('/:id/like',
     }
 );
 
-router.delete('/:id/like/:villagerName',
+router.delete('/:id/like',
     authMiddleware(['user:own:write']),
+    [
+        check('name').isString().withMessage('Name must be a string'),
+        check('category').isIn(['villagers', 'fish', 'bugs', 'fossils']).withMessage('Invalid category')
+    ],
     async (req, res) => {
+        const bodyError = validationResult(req);
+        if (!bodyError.isEmpty()) {
+            return res.status(400).json({ errors: bodyError.array() });
+        }
+
         try {
-            const { id, villagerName } = req.params;
+            const { id } = req.params;
+            const { name, category } = req.body;
             const isOwnUser = req.user.id === id;
 
             if (!isOwnUser) {
                 return res.status(403).json({ message: 'Access denied' });
             }
 
-            const villagers = await removeLike(id, villagerName);
+            const likes = await removeLike(id, name, category);
 
             res.status(200).json({
-                message: 'Villager removed from likes',
-                villagers: villagers
+                message: 'Item removed from likes',
+                likes: likes
             });
         } catch (error) {
             log(`Error removing like: ${error.message}`, 'error');

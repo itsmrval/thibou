@@ -9,7 +9,6 @@ struct BugDetailView: View {
 
     @State private var currentBugIndex: Int
     @State private var isFavorite = false
-    @State private var refreshTrigger = 0
 
     init(bug: Bug, allBugs: [Bug], onToggleFavorite: @escaping (Bug) -> Void, onShare: @escaping (Bug) -> Void) {
         self.bug = bug
@@ -49,11 +48,8 @@ struct BugDetailView: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             ScrollView {
-                BugDetailContent(bug: currentBug, refreshTrigger: refreshTrigger)
+                BugDetailContent(bug: currentBug)
                     .id(currentBug.id)
-            }
-            .refreshable {
-                await refreshBugDetails()
             }
 
             HStack(spacing: 16) {
@@ -215,17 +211,10 @@ struct BugDetailView: View {
             }
         }
     }
-
-    private func refreshBugDetails() async {
-        BugService.shared.clearAllCaches()
-        refreshTrigger += 1
-        preloadAdjacentImages()
-    }
 }
 
 struct BugDetailContent: View {
     let bug: Bug
-    let refreshTrigger: Int
     @State private var fullBug: Bug?
     @State private var isLoadingDetails = false
     @StateObject private var languageManager = LanguageManager.shared
@@ -304,12 +293,6 @@ struct BugDetailContent: View {
         }
         .task {
             await fetchFullBugDetailsIfNeeded()
-        }
-        .task(id: refreshTrigger) {
-            if refreshTrigger > 0 {
-                fullBug = nil
-                await fetchFullBugDetailsIfNeeded()
-            }
         }
     }
 

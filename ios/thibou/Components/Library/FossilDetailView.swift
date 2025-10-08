@@ -9,7 +9,6 @@ struct FossilDetailView: View {
 
     @State private var currentFossilIndex: Int
     @State private var isFavorite = false
-    @State private var refreshTrigger = 0
 
     init(fossil: Fossil, allFossils: [Fossil], onToggleFavorite: @escaping (Fossil) -> Void, onShare: @escaping (Fossil) -> Void) {
         self.fossil = fossil
@@ -39,11 +38,8 @@ struct FossilDetailView: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             ScrollView {
-                FossilDetailContent(fossil: currentFossil, refreshTrigger: refreshTrigger)
+                FossilDetailContent(fossil: currentFossil)
                     .id(currentFossil.id)
-            }
-            .refreshable {
-                await refreshFossilDetails()
             }
 
             HStack(spacing: 16) {
@@ -199,17 +195,10 @@ struct FossilDetailView: View {
             }
         }
     }
-
-    private func refreshFossilDetails() async {
-        FossilService.shared.clearAllCaches()
-        refreshTrigger += 1
-        preloadAdjacentImages()
-    }
 }
 
 struct FossilDetailContent: View {
     let fossil: Fossil
-    let refreshTrigger: Int
 
     var body: some View {
         VStack(spacing: 0) {

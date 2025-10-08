@@ -6,8 +6,6 @@ enum LibraryCategory: String, CaseIterable {
     case poissons = "fish"
     case insectes = "bugs"
     case fossiles = "fossils"
-    case vetements = "clothing"
-    case objets = "objects"
 
     var localizedName: String {
         switch self {
@@ -15,8 +13,6 @@ enum LibraryCategory: String, CaseIterable {
         case .poissons: return LocalizedKey.fish.localized
         case .insectes: return LocalizedKey.bugs.localized
         case .fossiles: return LocalizedKey.fossils.localized
-        case .vetements: return LocalizedKey.clothing.localized
-        case .objets: return LocalizedKey.objects.localized
         }
     }
 
@@ -26,8 +22,6 @@ enum LibraryCategory: String, CaseIterable {
         case .poissons: return "fish"
         case .insectes: return "bug"
         case .fossiles: return "fossil"
-        case .vetements: return "clothing"
-        case .objets: return "object"
         }
     }
 }
@@ -214,10 +208,6 @@ struct LibraryContentView: View {
             BugContentView()
         case .fossiles:
             FossilContentView()
-        case .vetements:
-            ComingSoonView(category: .vetements)
-        case .objets:
-            ComingSoonView(category: .objets)
         }
     }
 }
@@ -451,65 +441,6 @@ struct VillagersContentView: View {
     }
 }
 
-struct ComingSoonView: View {
-    let category: LibraryCategory
-
-    private var emptyMessage: String {
-        switch category {
-        case .villageois:
-            return LocalizedKey.noVillagersFound.localized
-        case .poissons:
-            return LocalizedKey.noFishFound.localized
-        case .insectes:
-            return LocalizedKey.noBugsFound.localized
-        case .fossiles:
-            return LocalizedKey.noFossilsFound.localized
-        case .vetements:
-            return LocalizedKey.noClothingFound.localized
-        case .objets:
-            return LocalizedKey.noObjectsFound.localized
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(category.localizedName)
-                    .font(ThibouTheme.Typography.body)
-                    .foregroundColor(.secondary)
-
-                Text("(0)")
-                    .font(ThibouTheme.Typography.body)
-                    .foregroundColor(.secondary.opacity(0.7))
-
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
-
-            VStack {
-                Spacer()
-                VStack(spacing: 16) {
-                    Image(category.customImage)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 80, height: 80)
-                        .foregroundColor(.secondary.opacity(0.6))
-
-                    Text(emptyMessage)
-                        .font(ThibouTheme.Typography.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-                .frame(maxWidth: .infinity)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-}
 
 struct LibraryVillagerCard: View {
     let villager: VillagerSummary

@@ -20,6 +20,7 @@ struct SmallResidentCard: View {
                                 cornerRadius: 8,
                                 placeholderColor: villager.titleColorValue
                             )
+                            .scaleEffect(0.75)
                         } else {
                             Color.clear
                                 .frame(width: geo.size.width, height: geo.size.height)
@@ -43,12 +44,12 @@ struct SmallResidentCard: View {
 
                 if let villager = villager {
                     Text(villager.nameForLanguage(languageManager.selectedLanguage.rawValue))
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 8, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)
                 } else {
                     Text(" ")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 8, weight: .semibold))
                 }
             }
         }

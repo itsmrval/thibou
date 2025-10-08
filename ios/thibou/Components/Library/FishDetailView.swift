@@ -9,7 +9,6 @@ struct FishDetailView: View {
 
     @State private var currentFishIndex: Int
     @State private var isFavorite = false
-    @State private var refreshTrigger = 0
 
     init(fish: Fish, allFishes: [Fish], onToggleFavorite: @escaping (Fish) -> Void, onShare: @escaping (Fish) -> Void) {
         self.fish = fish
@@ -49,11 +48,8 @@ struct FishDetailView: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             ScrollView {
-                FishDetailContent(fish: currentFish, refreshTrigger: refreshTrigger)
+                FishDetailContent(fish: currentFish)
                     .id(currentFish.id)
-            }
-            .refreshable {
-                await refreshFishDetails()
             }
 
             HStack(spacing: 16) {
@@ -215,17 +211,10 @@ struct FishDetailView: View {
             }
         }
     }
-
-    private func refreshFishDetails() async {
-        FishService.shared.clearAllCaches()
-        refreshTrigger += 1
-        preloadAdjacentImages()
-    }
 }
 
 struct FishDetailContent: View {
     let fish: Fish
-    let refreshTrigger: Int
     @State private var fullFish: Fish?
     @State private var isLoadingDetails = false
     @StateObject private var languageManager = LanguageManager.shared
@@ -303,12 +292,6 @@ struct FishDetailContent: View {
         }
         .task {
             await fetchFullFishDetailsIfNeeded()
-        }
-        .task(id: refreshTrigger) {
-            if refreshTrigger > 0 {
-                fullFish = nil
-                await fetchFullFishDetailsIfNeeded()
-            }
         }
     }
 

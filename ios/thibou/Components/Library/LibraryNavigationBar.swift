@@ -138,8 +138,6 @@ private struct CategoryChip: View {
         case .poissons:   return "fish"
         case .insectes:   return "ant.fill"
         case .fossiles:   return "leaf.fill"
-        case .vetements:  return "tshirt.fill"
-        case .objets:     return "shippingbox.fill"
         }
     }
 }

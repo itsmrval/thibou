@@ -73,6 +73,7 @@ struct IslandView: View {
                             }
                         }
                         .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
                     }
 
                     HStack(spacing: 8) {

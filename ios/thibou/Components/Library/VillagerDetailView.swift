@@ -9,7 +9,6 @@ struct VillagerDetailView: View {
 
     @State private var currentVillagerIndex: Int
     @State private var isFavorite = false
-    @State private var refreshTrigger = 0
 
     init(villager: Villager, allVillagers: [Villager], onToggleFavorite: @escaping (Villager) -> Void, onShare: @escaping (Villager) -> Void) {
         self.villager = villager
@@ -43,11 +42,8 @@ struct VillagerDetailView: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             ScrollView {
-                VillagerDetailContent(villager: currentVillager, refreshTrigger: refreshTrigger)
+                VillagerDetailContent(villager: currentVillager)
                     .id(currentVillager.id)
-            }
-            .refreshable {
-                await refreshVillagerDetails()
             }
 
             HStack(spacing: 16) {
@@ -209,16 +205,9 @@ struct VillagerDetailView: View {
             }
         }
     }
-
-    private func refreshVillagerDetails() async {
-        VillagerService.shared.clearAllCaches()
-        refreshTrigger += 1
-        preloadAdjacentImages()
-    }
 }
 struct VillagerDetailContent: View {
     let villager: Villager
-    let refreshTrigger: Int
     @State private var fullVillager: Villager?
     @State private var isLoadingDetails = false
     @StateObject private var languageManager = LanguageManager.shared
@@ -317,12 +306,6 @@ struct VillagerDetailContent: View {
         }
         .task {
             await fetchFullVillagerDetailsIfNeeded()
-        }
-        .task(id: refreshTrigger) {
-            if refreshTrigger > 0 {
-                fullVillager = nil
-                await fetchFullVillagerDetailsIfNeeded()
-            }
         }
     }
 
